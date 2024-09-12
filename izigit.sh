@@ -48,17 +48,17 @@ Help() {
   echo "options:"
   echo ""
   echo "create [ticket_number] Create, fetch and checkout branch for ticket ( example: izigit create 654 )"
-  echo "reset Reset test branch, so that it is strictly identical to the preprod branch ( example: izigit reset )"
+  echo "reset Reset test branch, so that it is strictly identical to the develop branch ( example: izigit reset )"
   echo "test [ticket_number] Merge issue branch into test branch ( example: izigit test 654 )"
-  echo "pr [ticket_number] Creating a pull request from the github issue branch to the preprod branch ( example: izigit pr 654 )"
+  echo "pr [ticket_number] Creating a pull request from the github issue branch to the develop branch ( example: izigit pr 654 )"
   echo "h     Print this Help."
 }
 
-# Creating a pull request from the github issue branch to the preprod branch
+# Creating a pull request from the github issue branch to the develop branch
 # Arguments: $2 = ticket number
-PrIssueToPreprod() {
+PrIssueToDevelop() {
   if [ $2 ]; then
-    preprod_branch=preprod
+    develop_branch=develop
     # Get branch name with ticket number
     issue_branch_name=$(git branch -r | grep $2 | sed 's/  origin\///')
 
@@ -67,7 +67,7 @@ PrIssueToPreprod() {
       exit 0
     fi
 
-    # Updates the issue branch, relative to the preprod branch
+    # Updates the issue branch, relative to the develop branch
     git checkout $issue_branch_name
     current_branch=$(git rev-parse --abbrev-ref HEAD)
     if [ "$issue_branch_name" != "$current_branch" ]; then
@@ -75,9 +75,9 @@ PrIssueToPreprod() {
       exit 0
     fi
     git pull origin $issue_branch_name
-    git checkout $preprod_branch
-    git pull origin $preprod_branch
-    git merge $preprod_branch
+    git checkout $develop_branch
+    git pull origin $develop_branch
+    git merge $develop_branch
     git push origin $issue_branch_name
 
     # Check if there are any conflicts
@@ -96,13 +96,13 @@ PrIssueToPreprod() {
 
     # Create a pull request from the issue branch to the target branch (main)
     # Create a pull request and get its URL
-    pr_url=$(gh pr create --base preprod --head "$issue_branch_name" -t "$2 $pr_title" -b "" | grep -o 'https://github.com[^ ]*')
+    pr_url=$(gh pr create --base develop --head "$issue_branch_name" -t "$2 $pr_title" -b "" | grep -o 'https://github.com[^ ]*')
 
     # Get PR number
     pr_number=$(echo "$pr_url" | grep -oP '/pull/\K[0-9]+')
 
     # Add comment to issue
-    comment="$date - create pull request branch $issue_branch_name to $preprod_branch - $github_name. [PR #$pr_number]($pr_url)"
+    comment="$date - create pull request branch $issue_branch_name to $develop_branch - $github_name. [PR #$pr_number]($pr_url)"
     gh issue comment $2 -b "$comment"
     echo $comment
     exit 0
@@ -151,14 +151,14 @@ MergeIssueInTest() {
   echo "Please specify allows ticket number, izigit test [ticket_number] ( example: izigit test 654 )"
 }
 
-# Fonction for reset test branch, so that it is strictly identical to the preprod branch
-ResetTestToPreprod() {
+# Fonction for reset test branch, so that it is strictly identical to the develop branch
+ResetTestToDevelop() {
   current_test_branch_id="$(get_current_test_branch_id)"
   new_test_branch_id=$(($current_test_branch_id + 1))
   test_branch="test-$new_test_branch_id"
-  reference_branch="preprod"
+  reference_branch="develop"
 
-  # Fetch and checkout the reference branch (preprod)
+  # Fetch and checkout the reference branch (develop)
   git fetch
   git checkout $reference_branch
   current_branch=$(git rev-parse --abbrev-ref HEAD)
@@ -171,7 +171,7 @@ ResetTestToPreprod() {
   # Delete all local test-* working branches
   git branch | grep ' test-*' | xargs git branch -D
 
-  # Create a new test branch from the reference branch (preprod)
+  # Create a new test branch from the reference branch (develop)
   git checkout -b $test_branch
 
   # Push the new branch to the remote repository
@@ -230,6 +230,6 @@ if [ $OPTIND -eq 1 ] && [ $# -eq 0 ]; then echo "An argument is required, please
 
 # Enable options
 if [ "$1" == "create" ]; then CreateBranch $1 $2; fi
-if [ "$1" == "reset" ]; then ResetTestToPreprod; fi
+if [ "$1" == "reset" ]; then ResetTestToDevelop; fi
 if [ "$1" == "test" ]; then MergeIssueInTest $1 $2; fi
-if [ "$1" == "pr" ]; then PrIssueToPreprod $1 $2; fi
+if [ "$1" == "pr" ]; then PrIssueToDevelop $1 $2; fi
