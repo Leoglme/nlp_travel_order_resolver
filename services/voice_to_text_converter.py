@@ -12,12 +12,6 @@ class VoiceToTextConverter:
         self.language = language
 
     def convert_from_audio_file(self, file_path):
-        """
-        Convertit un fichier audio en texte.
-
-        :param file_path: Chemin vers le fichier audio.
-        :return: Le texte transcrit ou une erreur en cas d'échec.
-        """
         try:
             with sr.AudioFile(file_path) as source:
                 audio = self.recognizer.record(source)
