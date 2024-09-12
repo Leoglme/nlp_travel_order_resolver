@@ -181,34 +181,34 @@ ResetTestToDevelop() {
   echo $comment
 }
 
-# Fonction for create branch for ticket and fetch, checkout this branch
-# Arguments: $2 = ticket number
+# Fonction pour créer une branche pour le ticket et y basculer
+# Arguments: $2 = numéro du ticket
 CreateBranch() {
   if [ $2 ]; then
-    # Get the title of the issue using the gh command
+    # Récupérer le titre de l'issue via la commande gh
     issue_title=$(gh issue view $2 --json title --jq .title)
-    # remove special characters from issue_title
+
+    # Enlever les caractères spéciaux du titre de l'issue
     issue_title=${issue_title//[^a-zA-Z0-9 ]/}
-    # replace multiple spaces with single space and trim title
+
+    # Remplacer les espaces multiples par un seul espace et trimmer le titre
     issue_title="$(echo -e "${issue_title}" | tr -s ' ' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-    # Replace spaces with dashes and concatenate the issue number to the branch name to avoid filename issues
+
+    # Remplacer les espaces par des tirets et ajouter le numéro de l'issue au nom de la branche
     branch_name=$2-${issue_title// /-}
-    # Create the issue branch and link the branch to the GitHub issue
-    gh issue develop $2 --name $branch_name --base $branch_name
 
-    git fetch origin
-    # Checkout to the created branch
-    git checkout $branch_name
+    # Créer la branche localement et lier à l'issue GitHub
+    git checkout -b "$branch_name"
+    git push origin "$branch_name"
 
-    comment="$date - creation of the $branch_name branch and branch link to issue $2 - $github_name"
-
-    # Add comment to issue
+    # Ajouter un commentaire à l'issue pour lier la branche
+    comment="$date - création de la branche $branch_name et lien avec l'issue $2 - $github_name"
     gh issue comment $2 -b "$comment"
 
     echo $comment
     exit 0
   fi
-  echo "Please specify allows ticket number, izigit create [ticket_number] ( example: izigit create 654 )"
+  echo "Veuillez spécifier le numéro du ticket, izigit create [numéro_ticket] (exemple : izigit create 654)"
 }
 
 # Enable options arguments
