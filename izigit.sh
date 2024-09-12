@@ -198,7 +198,7 @@ CreateBranch() {
     branch_name=$2-${issue_title// /-}
     # Create the issue branch and link the branch to the GitHub issue
     printf "Creating branch $branch_name for issue #$2\n"
-    gh issue develop $2 --name $branch_name
+    gh issue develop $2
 
     git fetch origin
     # Checkout to the created branch
