@@ -1,2 +1,3 @@
-SpeechRecognition
+SpeechRecognition~=3.10.4
 PyAudio
+requests~=2.31.0
