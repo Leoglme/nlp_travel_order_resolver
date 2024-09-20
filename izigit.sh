@@ -196,10 +196,13 @@ CreateBranch() {
 
     # Remplacer les espaces par des tirets et ajouter le numéro de l'issue au nom de la branche
     branch_name=$2-${issue_title// /-}
+    # Create the issue branch and link the branch to the GitHub issue
+    printf "Creating branch $branch_name for issue #$2\n"
+    gh issue develop $2
 
-    # Créer la branche localement et lier à l'issue GitHub
-    git checkout -b "$branch_name"
-    git push origin "$branch_name"
+    git fetch origin
+    # Checkout to the created branch
+    git checkout $branch_name
 
     # Ajouter un commentaire à l'issue pour lier la branche
     comment="$date - création de la branche $branch_name et lien avec l'issue $2 - $github_name"
