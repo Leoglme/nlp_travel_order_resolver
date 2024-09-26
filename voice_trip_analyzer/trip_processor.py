@@ -3,34 +3,27 @@ import spacy
 class TripProcessor:
     def __init__(self):
         self.nlp = spacy.load("fr_core_news_md")
-        # Charger le modèle fine-tuné
-        # self.nlp = spacy.load("/Users/quentin/Ecoles/Epitech/MSC-2/IA/T-AIA-901/Projet/ia/fine_tuned_model/model_voyage")
 
     def process_voice_text(self, text):
         if not text:
             print("Aucun texte reconnu.")
-            return
+            return None, None
 
         doc = self.nlp(text)
 
         departure_keywords = ["depuis", "de", "partant de"]
         arrival_keywords = ["à", "vers", "destination"]
 
-        # Extraction des entités de localisation
         locations = [ent.text for ent in doc.ents if ent.label_ == "LOC"]
-        print(locations)
-
         if len(locations) < 2:
             print("NOT_TRIP: Commande de voyage non reconnue.")
-            return
+            return None, None
 
-        # Extraction des départs et arrivées
         departure, arrival = self.extract_locations(doc, departure_keywords, arrival_keywords)
-
         if departure and arrival:
-            print(f"Départ : {departure}, Arrivée : {arrival}")
+            return departure, arrival
         else:
-            print(f"Départ : {locations[0]}, Arrivée : {locations[1]}")
+            return locations[0], locations[1]
 
     def extract_locations(self, doc, departure_keywords, arrival_keywords):
         departure = None
@@ -49,7 +42,6 @@ class TripProcessor:
         return departure, arrival
 
     def get_next_location(self, doc, current_index):
-        # Chercher l'entité "LOC" après l'indice actuel
         for ent in doc.ents:
             if ent.label_ == "LOC" and ent.start > current_index:
                 return ent.text
