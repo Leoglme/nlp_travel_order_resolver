@@ -8,6 +8,8 @@ evaluate
 transformers[torch]
 accelerate
 seqeval
-numpy
 psutil
 gputil
+fasttext-langdetect-wheel
+numpy==1.26.4
+matplotlib
