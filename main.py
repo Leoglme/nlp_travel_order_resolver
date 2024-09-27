@@ -16,25 +16,27 @@ from services.device_manager import DeviceManager
 from services.dataset_generator import DatasetGenerator
 from models.camembert_ner_trainer import CamemBERTNERTrainer
 
-manager = DeviceManager()
 
-# Comparer les performances entre CPU et GPU
-best_device = manager.compare_devices()
-print(f"L'appareil le plus rapide est : {best_device}")
+if __name__ == '__main__':
+    device_manager = DeviceManager()
 
-if best_device == "gpu":
-    # Passer au GPU
-    manager.use_gpu()
-else:
-    # Passer au CPU
-    manager.use_cpu()
+    # Comparer les performances entre CPU et GPU
+    best_device = device_manager.compare_devices()
+    print(f"L'appareil le plus rapide est : {best_device}")
 
-# Créer une instance de DatasetGenerator pour générer le fichier CSV
-dataset_generator = DatasetGenerator()
+    if best_device == "gpu":
+        # Passer au GPU
+        device_manager.use_gpu()
+    else:
+        # Passer au CPU
+        device_manager.use_cpu()
 
-# Générer les fichiers CSV du dataset
-dataset_generator.generate_dataset()
+    # Créer une instance de DatasetGenerator pour générer le fichier CSV
+    dataset_generator = DatasetGenerator()
 
-ner_trainer = CamemBERTNERTrainer()
-ner_trainer.train()
-ner_trainer.save_model()
+    # Générer les fichiers CSV du dataset
+    dataset_generator.generate_dataset()
+
+    ner_trainer = CamemBERTNERTrainer()
+    ner_trainer.train()
+    ner_trainer.save_model()
