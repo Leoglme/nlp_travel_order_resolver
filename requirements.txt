@@ -2,3 +2,12 @@ SpeechRecognition
 PyAudio
 requests
 tqdm
+torch
+datasets
+evaluate
+transformers[torch]
+accelerate
+seqeval
+numpy
+psutil
+gputil
