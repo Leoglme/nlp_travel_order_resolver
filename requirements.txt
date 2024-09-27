@@ -2,7 +2,14 @@ SpeechRecognition
 PyAudio
 requests
 tqdm
+torch
+datasets
+evaluate
+transformers[torch]
+accelerate
+seqeval
+psutil
+gputil
 fasttext-langdetect-wheel
 numpy==1.26.4
 matplotlib
-

@@ -5,7 +5,7 @@ import random
 
 class CityTemplateFillerManager:
     def __init__(self, city_file="datasets/city.csv", template_file="datasets/sentence_templates.csv",
-                 output_file="datasets/sentences_with_cities.csv", max_lines=200000):
+                 output_file="datasets/sentences_with_cities.csv", max_lines=1000):
         self.city_file = city_file
         self.template_file = template_file
         self.output_file = output_file
