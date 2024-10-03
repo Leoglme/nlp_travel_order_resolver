@@ -10,6 +10,7 @@
 
 # self.model_name = "distilcamembert-base"
 import os
+import nbformat as nbf
 # Masquer les warnings TensorFlow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from services.device_manager import DeviceManager
