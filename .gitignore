@@ -1,3 +1,4 @@
 .idea
 model_output
 logs
+assets/models/**
