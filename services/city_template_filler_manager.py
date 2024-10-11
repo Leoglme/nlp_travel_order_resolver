@@ -48,7 +48,7 @@ class CityTemplateFillerManager:
 
         with open(self.output_file, mode="w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(["text", "departure", "destination", "status"])  # En-tête du CSV
+            writer.writerow(["text", "departure", "destination"])  # En-tête du CSV
 
             # Utiliser tqdm pour afficher la progress bar
             with tqdm(total=self.max_lines, desc="Génération des phrases", unit="phrase") as pbar:
@@ -63,7 +63,7 @@ class CityTemplateFillerManager:
                             "{destination_city}", destination_city)
 
                         # Ajouter la ligne avec les villes remplacées
-                        writer.writerow([text, departure_city, destination_city, template["status"]])
+                        writer.writerow([text, departure_city, destination_city])
 
                         # Mettre à jour la progress bar
                         pbar.update(1)

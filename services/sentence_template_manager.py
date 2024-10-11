@@ -46,8 +46,7 @@ class SentenceTemplateManager:
             templates.append({
                 "text": template,
                 "departure": "{departure_city}",
-                "destination": "{destination_city}",
-                "status": "VALID"
+                "destination": "{destination_city}"
             })
 
         return templates
@@ -58,9 +57,9 @@ class SentenceTemplateManager:
         """
         with open(self.output_file, mode="w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
-            writer.writerow(["text", "departure_placeholder", "destination_placeholder", "status"])
+            writer.writerow(["text", "departure_placeholder", "destination_placeholder"])
 
             for template in templates:
-                writer.writerow([template["text"], template["departure"], template["destination"], template["status"]])
+                writer.writerow([template["text"], template["departure"], template["destination"]])
 
         print(f"{len(templates)} templates ont été générés et enregistrés dans {self.output_file}")

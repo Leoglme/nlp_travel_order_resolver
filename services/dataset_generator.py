@@ -71,5 +71,5 @@ class DatasetGenerator:
         Génère un dataset complet avec les villes, les templates de phrases et les phrases remplies avec des villes.
         """
         self.generate_city_csv()
-        self.generate_sentence_template_csv(num_templates=200)
+        self.generate_sentence_template_csv(num_templates=1000)
         self.generate_filled_templates_csv()

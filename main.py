@@ -12,36 +12,33 @@ from services.path_finder_manager import PathFinderManager
 
 if __name__ == '__main__':
     # Partie reconnaissance vocale
-    voice_text_converter = VoiceToTextConverter()
+    # voice_text_converter = VoiceToTextConverter()
 
     # Pour utiliser un fichier audio
     # text_from_file = converter.convert_from_audio_file("assets/toulouse-bordeaux.wav")
     # print(f"Texte extrait du fichier audio : {text_from_file}")
 
     # Pour utiliser le microphone
-    text_from_microphone = voice_text_converter.convert_from_microphone()
-    print(f"Texte extrait du microphone : {text_from_microphone}")
+    # text_from_microphone = voice_text_converter.convert_from_microphone()
+    # print(f"Texte extrait du microphone : {text_from_microphone}")
 
     # Détection de la langue pour vérifier que c'est bien du français
     lang_identifier = LanguageIdentification()
+    # lang, confidence = lang_identifier.stat_print(text_from_microphone)
+    text_from_microphone = "je voudrais aller de Toulouse à bordeaux"
+    print(f"Texte extrait du microphone : {text_from_microphone}")
+    # text_from_microphone = "je veux aller de Biarritz à Rennes"
     lang, confidence = lang_identifier.stat_print(text_from_microphone)
 
     if lang[0] == "__label__fr":  # Si la langue détectée est le français
         print("Texte en français détecté.")
 
-        # Comparer les performances entre CPU et GPU
-        device_manager = DeviceManager()
-        best_device = device_manager.compare_devices()
-        print(f"L'appareil le plus rapide est : {best_device}")
-
-        if best_device == "gpu":
-            device_manager.use_gpu()
-        else:
-            device_manager.use_cpu()
+        # Model for verify valid sentence (subject is Ok)
 
         # Initialiser le CamemBERTNERTrainer
         ner_trainer = CamemBERTNERTrainer()
 
+        # TODO: Entrainement model dans un autre fichier
         # Vérifier si le modèle est déjà entraîné ou non
         if os.path.exists(ner_trainer.output_dir):  # Si le modèle est déjà entraîné
             ner_trainer.load_model()
@@ -50,10 +47,26 @@ if __name__ == '__main__':
             # Génération du dataset (ceci génère le fichier `sentences_with_cities.csv`)
             dataset_generator = DatasetGenerator()
             dataset_generator.generate_dataset()
+
+            print("Dataset généré, exemple :")
+            with open("datasets/sentences_with_cities.csv", "r", encoding="utf-8") as f:
+                for i in range(5):
+                    print(f.readline())
+
+            # Comparer les performances entre CPU et GPU
+            device_manager = DeviceManager()
+            best_device = device_manager.compare_devices()
+            print(f"L'appareil le plus rapide est : {best_device}")
+
+            if best_device == "gpu":
+                device_manager.use_gpu()
+            else:
+                device_manager.use_cpu()
             # Entraîner le modèle
             ner_trainer.init_and_train_model()
 
         # Extraction des villes de départ et de destination à partir du texte
+        # departure, destination = ner_trainer.extract_trip_details(text_from_microphone)
         departure, destination = ner_trainer.extract_trip_details(text_from_microphone)
         print(f"Départ : {departure}, Destination : {destination}")
 
