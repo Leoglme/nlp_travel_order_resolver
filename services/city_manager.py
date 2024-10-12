@@ -1,13 +1,19 @@
 import requests
 
+"""
+CityManager is a service that allows you to retrieve cities from the French government's Geo API.
+"""
+
+
 class CityManager:
     def __init__(self, api_url="https://geo.api.gouv.fr/communes"):
         self.api_url = api_url
 
+    """
+    Retrieves cities via the French government's Geo API.
+    """
+
     def fetch_cities(self, limit=100000):
-        """
-        Récupère les villes via l'API Géo du gouvernement français.
-        """
         params = {
             "fields": "nom",
             "format": "json",
@@ -17,15 +23,15 @@ class CityManager:
         response = requests.get(self.api_url, params=params)
 
         if response.status_code == 200:
-            return response.json()  # On récupère le JSON brut
+            return response.json()
         else:
-            print(f"Erreur : Impossible de récupérer les villes (code {response.status_code})")
+            print(f"Error: Unable to retrieve cities (code {response.status_code})")
             return []
+
+    """
+    Formats city data for later use (for example, only city names).
+    """
 
     @staticmethod
     def get_cities_names(cities):
-        """
-        Formate les données des villes pour une utilisation ultérieure (par exemple, uniquement le nom des villes).
-        """
-        formatted_cities = [city["nom"] for city in cities]
-        return formatted_cities
+        return [city["nom"] for city in cities]

@@ -2,6 +2,10 @@ import csv
 from tqdm import tqdm
 import random
 
+"""
+This class is responsible for filling sentence templates with cities.
+"""
+
 
 class CityTemplateFillerManager:
     def __init__(self, city_file="datasets/city.csv", template_file="datasets/sentence_templates.csv",
@@ -11,22 +15,24 @@ class CityTemplateFillerManager:
         self.output_file = output_file
         self.max_lines = max_lines
 
+    """
+    Load cities from the city.csv file.
+    """
+
     def load_cities(self):
-        """
-        Charge les villes depuis le fichier city.csv.
-        """
         cities = []
         with open(self.city_file, mode="r", encoding="utf-8") as f:
             reader = csv.reader(f)
-            next(reader)  # Sauter l'en-tête
+            next(reader)
             for row in reader:
-                cities.append(row[0])  # Ajouter chaque ville dans la liste
+                cities.append(row[0])
         return cities
 
+    """
+    Loads templates from sentence_templates.csv.
+    """
+
     def load_templates(self):
-        """
-        Charge les templates depuis sentence_templates.csv.
-        """
         templates = []
         with open(self.template_file, mode="r", encoding="utf-8") as f:
             reader = csv.DictReader(f)
@@ -34,40 +40,41 @@ class CityTemplateFillerManager:
                 templates.append(row)
         return templates
 
+    """
+    Replaces placeholders {departure_city} and {destination_city} with a random subset of city combinations.
+    Limits the total number of lines generated based on the max_lines parameter.
+    Generates combinations randomly without storing everything in memory.
+    """
+
     def fill_templates_with_cities(self):
-        """
-        Remplace les placeholders {departure_city} et {destination_city} par un sous-ensemble aléatoire de combinaisons de villes.
-        Limite le nombre total de lignes générées en fonction du paramètre max_lines.
-        Génère les combinaisons aléatoirement sans tout stocker en mémoire.
-        """
         cities = self.load_cities()
         templates = self.load_templates()
 
-        # Calculer le nombre total de combinaisons à générer par template
+        # Calculate the total number of combinations to generate per template
         lines_per_template = self.max_lines // len(templates)
 
         with open(self.output_file, mode="w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["text", "departure", "destination"])  # En-tête du CSV
 
-            # Utiliser tqdm pour afficher la progress bar
+            # Use tqdm to display the progress bar
             with tqdm(total=self.max_lines, desc="Génération des phrases", unit="phrase") as pbar:
                 for template in templates:
                     count = 0
                     while count < lines_per_template:
-                        # Choisir des villes de départ et d'arrivée aléatoirement sans doublon
+                        # Choose departure and arrival cities randomly without duplicates
                         departure_city, destination_city = random.sample(cities, 2)
 
-                        # Remplacer les placeholders dans le template
+                        # Replace placeholders in the template
                         text = template["text"].replace("{departure_city}", departure_city).replace(
                             "{destination_city}", destination_city)
 
-                        # Ajouter la ligne avec les villes remplacées
+                        # Add the row with the replaced cities
                         writer.writerow([text, departure_city, destination_city])
 
-                        # Mettre à jour la progress bar
+                        # Update the progress bar
                         pbar.update(1)
 
                         count += 1
 
-        print(f"\nGénération terminée ! {self.max_lines} phrases ont été générées dans {self.output_file}.")
+        print(f"\nGeneration complete! {self.max_lines} sentences were generated in {self.output_file}.")
