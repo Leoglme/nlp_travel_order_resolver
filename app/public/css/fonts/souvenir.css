@@ -1,0 +1,23 @@
+/* Souvenir Regular */
+@font-face {
+  font-family: 'Souvenir';
+  src: url('/fonts/souvenir/Souvenir.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Souvenir medium */
+@font-face {
+  font-family: 'Souvenir';
+  src: url('/fonts/souvenir/SouvenirB.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* Souvenir Bold */
+@font-face {
+  font-family: 'Souvenir';
+  src: url('/fonts/souvenir/SouvenirBI.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+}
