@@ -14,3 +14,7 @@ fasttext-langdetect-wheel
 numpy==1.26.4
 matplotlib
 nbformat
+fastapi
+pydantic
+python-multipart
+uvicorn

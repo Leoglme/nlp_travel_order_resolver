@@ -5,6 +5,7 @@ import logging
 # Configuration du logger
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
+
 class VoiceToTextConverter:
     def __init__(self, language="fr-FR", energy_threshold=300, pause_threshold=0.8):
         """
