@@ -4,35 +4,35 @@ import numpy as np
 import evaluate
 from services.system_manager import SystemManager
 
+"""
+This class is responsible for training a DistilBERT-based model to classify whether
+a sentence refers to a trip (departure and arrival cities) or not.
+
+**Why DistilBERT?**
+The choice of DistilBERT was made because it offers a lightweight and efficient alternative
+to heavier models like BERT and CamemBERT. DistilBERT is 40% smaller than BERT while retaining
+about 97% of its performance, making it an ideal choice for this task. It captures enough
+semantic information to differentiate between sentences talking about trips and other sentences
+without the computational overhead of larger models.
+
+**Why not CamemBERT?**
+CamemBERT is a strong option for French-specific tasks, but it is larger and slower to train than
+DistilBERT. Since the task here is relatively simple (classifying if a sentence involves a trip),
+DistilBERT is sufficient, and its smaller size makes it more suitable for quicker inference and
+training. Moreover, DistilBERT can be fine-tuned effectively on French sentences even though it
+was pre-trained on English, thanks to its general understanding of semantic structures.
+
+**Why not Logistic Regression with Scikit-learn?**
+Logistic Regression is a simpler, faster solution, but it does not capture deep semantic information
+like transformer-based models do. Given that we need to understand the meaning of a sentence in
+context (e.g., recognizing that "going to the store" is not a trip to the same sense as "traveling
+from Paris to Lyon"), Logistic Regression might fail to generalize well on complex language patterns.
+DistilBERT, by contrast, captures these nuances better thanks to its deep learning architecture.
+"""
+
 
 class TravelIntentClassifierModel:
-    """
-    This class is responsible for training a DistilBERT-based model to classify whether
-    a sentence refers to a trip (departure and arrival cities) or not.
-
-    **Why DistilBERT?**
-    The choice of DistilBERT was made because it offers a lightweight and efficient alternative
-    to heavier models like BERT and CamemBERT. DistilBERT is 40% smaller than BERT while retaining
-    about 97% of its performance, making it an ideal choice for this task. It captures enough
-    semantic information to differentiate between sentences talking about trips and other sentences
-    without the computational overhead of larger models.
-
-    **Why not CamemBERT?**
-    CamemBERT is a strong option for French-specific tasks, but it is larger and slower to train than
-    DistilBERT. Since the task here is relatively simple (classifying if a sentence involves a trip),
-    DistilBERT is sufficient, and its smaller size makes it more suitable for quicker inference and
-    training. Moreover, DistilBERT can be fine-tuned effectively on French sentences even though it
-    was pre-trained on English, thanks to its general understanding of semantic structures.
-
-    **Why not Logistic Regression with Scikit-learn?**
-    Logistic Regression is a simpler, faster solution, but it does not capture deep semantic information
-    like transformer-based models do. Given that we need to understand the meaning of a sentence in
-    context (e.g., recognizing that "going to the store" is not a trip to the same sense as "traveling
-    from Paris to Lyon"), Logistic Regression might fail to generalize well on complex language patterns.
-    DistilBERT, by contrast, captures these nuances better thanks to its deep learning architecture.
-    """
-
-    def __init__(self, model_name="distilbert-base-uncased", num_labels=2, batch_size=16, epochs=10,
+    def __init__(self, model_name="distilbert-base-uncased", num_labels=2, batch_size=16, epochs=20,
                  output_dir="./model_output/travel_intent_classifier", log_dir="./logs/travel_intent_classifier"):
         """
         Initializes the TripClassifierModel with the specified parameters.
@@ -69,6 +69,7 @@ class TravelIntentClassifierModel:
     Returns:
         DatasetDict: A dictionary with 'train' and 'test' datasets.
     """
+
     @staticmethod
     def load_data(csv_file):
         dataset = load_dataset('csv', data_files=csv_file)
@@ -84,6 +85,7 @@ class TravelIntentClassifierModel:
     Returns:
         dict: A dictionary containing tokenized inputs.
     """
+
     def tokenize_data(self, examples):
         return self.tokenizer(examples['text'], padding='max_length', truncation=True)
 
@@ -96,6 +98,7 @@ class TravelIntentClassifierModel:
     Returns:
         dict: A dictionary containing precision, recall, f1, and accuracy scores.
     """
+
     @staticmethod
     def compute_metrics(p):
         metric = evaluate.load("accuracy")
@@ -124,6 +127,7 @@ class TravelIntentClassifierModel:
     Args:
         dataset (DatasetDict): The training and test datasets.
     """
+
     def train(self, dataset):
         SystemManager.clean_directories([self.output_dir, self.log_dir])
         tokenized_datasets = dataset.map(self.tokenize_data, batched=True)
@@ -169,6 +173,7 @@ class TravelIntentClassifierModel:
     Returns:
        dict: The computed evaluation metrics.
     """
+
     def evaluate(self, dataset):
         tokenized_datasets = dataset.map(self.tokenize_data, batched=True)
 
@@ -183,6 +188,7 @@ class TravelIntentClassifierModel:
         # Evaluate the model
         eval_results = trainer.evaluate()
         return eval_results
+
     """
     Predicts if the input sentence refers to a trip or not.
 
@@ -192,6 +198,7 @@ class TravelIntentClassifierModel:
     Returns:
         int: Prediction (1 for trip-related, 0 for non-trip-related).
     """
+
     def predict(self, sentence: str):
         inputs = self.tokenizer([sentence], padding=True, truncation=True, return_tensors="pt")
         outputs = self.model(**inputs)

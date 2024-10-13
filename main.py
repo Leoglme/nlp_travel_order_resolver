@@ -24,7 +24,7 @@ if __name__ == '__main__':
     # Language detection to verify that it is indeed French
     lang_identifier = LanguageIdentification()
     # lang, confidence = lang_identifier.stat_print(text_from_microphone)
-    # text_from_microphone = "je voudrais aller de Rennes à Nantes"
+    # text_from_microphone = "je veux aller manger une glace à Rennes"
     print(f"Text taken from microphone : {text_from_microphone}")
     lang, confidence = lang_identifier.stat_print(text_from_microphone)
 
