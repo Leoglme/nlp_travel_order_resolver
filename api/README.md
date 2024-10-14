@@ -44,6 +44,13 @@ Run the server with the following command:
 python run_server.py
 ```
 
+Or use Uvicorn for live reloading directly:
+
+```bash
+uvicorn api.app:app --reload --log-level info
+```
+
+
 ### API Endpoints
 
 #### 1. **Convert Audio to Text**

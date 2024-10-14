@@ -2,11 +2,12 @@ import sys
 import os
 import logging
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
+from api.services.audio_service import AudioService
 from models.camembert_ner_model import CamemBERTNERModel
 from models.travel_intent_classifier_model import TravelIntentClassifierModel
 from services.sncf.sncf_route_finder import SNCFRouteFinder
@@ -14,6 +15,13 @@ from services.voice_to_text_converter import VoiceToTextConverter
 from services.language_detection import LanguageIdentification
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -48,8 +56,11 @@ async def audio_to_text_route(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="File size exceeds 10MB.")
 
     try:
+        # Convert to WAV using AudioService
+        wav_file = AudioService.convert_to_wav(file.file)
+
         voice_to_text_converter = VoiceToTextConverter()
-        text_from_audio = voice_to_text_converter.convert_from_audio_file(file.file)
+        text_from_audio = voice_to_text_converter.convert_from_audio_file(wav_file)
         logger.info(f"Converted audio to text: {text_from_audio}")
         return {"sentence": text_from_audio}
     except Exception as e:
@@ -65,7 +76,8 @@ async def validate_travel_intent(request: SentenceRequest):
     lang, confidence = lang_identifier.stat_print(request.sentence)
     if lang[0] != "__label__fr":
         logger.info(f"Non-French text detected, language is {lang[0]} with confidence {confidence} %")
-        raise HTTPException(status_code=422, detail=f"Non-French text detected, language is {lang[0]} with confidence {confidence[0]} %")
+        raise HTTPException(status_code=422,
+                            detail=f"Non-French text detected, language is {lang[0]} with confidence {confidence[0]} %")
 
     # Model for verify valid sentence (subject is Ok)
     trip_intent_classifier_model = TravelIntentClassifierModel()

@@ -18,24 +18,27 @@
         </h1>
 
         <div class="w-full flex justify-center items-center">
-          <div class="group bg-white px-5 py-8 shadow-lg rounded-lg flex w-full text-gray-700 min-w-[280px] max-w-3xl">
-            <div class="flex flex-col md:flex-row items-center gap-4 w-full">
+          <div class="group bg-white px-5 py-6 shadow-lg rounded-lg flex w-full text-gray-700 min-w-[280px] max-w-3xl">
+            <div class="grid md:grid-cols-[auto,1fr,auto] items-center gap-4 w-full">
+              <EpiVoiceRecordButton
+                  class="relative top-1"
+                  :isRecording="voiceIsRecording"
+                  :disabled="false"
+                  @start-recording="voiceStartRecording"
+                  @stop-recording="voiceStopRecording"
+                  @audio-ready="handleAudio"
+              />
               <EpiInput
                   v-model:value="sentence"
                   name="travel_intent"
                   type="text"
                   label="Quel trajet voulez-vous faire ?"
-                  placeholder="Ex: Je pars de Paris pour aller à Lyon"
+                  placeholder="Je pars de Rennes pour aller à Biarritz"
                   rules="required"
-              />
-              <EpiVoiceRecordButton
-                  :isRecording="voiceIsRecording"
-                  :disabled="false"
-                  @start-recording="voiceStartRecording"
-                  @stop-recording="voiceStopRecording"
+                  class="flex-1"
               />
               <EpiButton
-                  class="w-full md:w-fit"
+                  class="w-full md:w-fit relative top-1"
                   icon="fa-magnifying-glass"
                   :disabled="!sentence"
                   @click="redirectToMap"
@@ -55,6 +58,9 @@ import type {Ref} from "vue";
 import EpiButton from '~/components/buttons/EpiButton.vue'
 import EpiInput from "~/components/inputs/EpiInput.vue";
 import EpiVoiceRecordButton from "~/components/buttons/EpiVoiceRecordButton.vue";
+import TravelOrderResolverService from "~/core/services/TravelOrderResolverService";
+import type { ErrorResponse } from '~/core/types/response'
+import NotyfService from "~/lib/services/NotyfService";
 
 /* METAS */
 useHead({
@@ -81,6 +87,34 @@ const voiceStartRecording = () => {
 
 const voiceStopRecording = () => {
   voiceIsRecording.value = false
+}
+
+/* Handle the audio when it's ready */
+const handleAudio = async (audioUrl: string) => {
+  console.log('Audio URL: ', audioUrl)
+
+  // Convert the audioUrl into a Blob and send it to the API
+  const response = await fetch(audioUrl)
+  const audioBlob = await response.blob()
+  const file = new File([audioBlob], "audio.wav", { type: "audio/wav" })
+
+  // Call the API to convert the audio to text
+  const audioTextResponse: { sentence: string } | ErrorResponse = await TravelOrderResolverService.audioToText(file)
+
+  console.log({
+    audioTextResponse
+  })
+
+  if ('detail' in audioTextResponse) {
+    console.error('Error while converting audio to text:', audioTextResponse.detail)
+    const notyfService = new NotyfService()
+    notyfService.error(audioTextResponse.detail)
+    return
+  }
+
+  // Update the sentence with the transcribed text
+  sentence.value = audioTextResponse.sentence
+  console.log("Transcribed text: ", audioTextResponse.sentence)
 }
 </script>
 

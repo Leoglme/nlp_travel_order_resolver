@@ -4,6 +4,8 @@
   "compilerOptions": {
     "strict": true,
     "skipLibCheck": true,
-    "types": ["mapbox-gl", "pinia", "axios", "types/*"]
+    "target": "esnext",
+    "module": "esnext",
+    "types": ["mapbox-gl", "pinia", "types/*"]
   }
 }

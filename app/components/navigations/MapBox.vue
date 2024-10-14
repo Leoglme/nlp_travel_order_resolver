@@ -115,8 +115,8 @@
 <!--const loadRoute = async () => {-->
 <!--  if (!start.value || !end.value) return-->
 <!--  const directionsRequest = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${start.value.join(',')};${end.value.join(',')}?geometries=geojson&overview=full&access_token=${mapboxAccessToken}`-->
-<!--  const response = await axios.get(directionsRequest)-->
-<!--  const routeData = response.data.routes[0].geometry-->
+<!--  const response.d.ts = await axios.get(directionsRequest)-->
+<!--  const routeData = response.d.ts.data.routes[0].geometry-->
 
 <!--  map.value?.addLayer({-->
 <!--    id: 'route',-->
@@ -355,8 +355,8 @@
 <!--  const directionsRequest = `https://api.mapbox.com/directions/v5/mapbox/driving/${coordinates.join(';')}?geometries=geojson&steps=true&access_token=${mapboxAccessToken}`-->
 
 <!--  try {-->
-<!--    const response = await axios.get(directionsRequest)-->
-<!--    const data = response.data.routes[0].geometry-->
+<!--    const response.d.ts = await axios.get(directionsRequest)-->
+<!--    const data = response.d.ts.data.routes[0].geometry-->
 
 <!--    // Mettre à jour ou ajouter la couche de route si elle n'existe pas-->
 <!--    if (map.value?.getLayer('route')) {-->

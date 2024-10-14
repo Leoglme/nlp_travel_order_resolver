@@ -98,7 +98,9 @@
           :content="app.name"
       />
     </Head>
-    <Body>
+    <Body
+     class="overflow-y-hidden"
+    >
     <img
         alt="image non visible"
         width="99999"

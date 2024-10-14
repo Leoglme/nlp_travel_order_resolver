@@ -9,7 +9,7 @@
     </label>
     <Field
         :id="props.name"
-        :value="props.value"
+        v-model="inputValue"
         :name="props.name"
         :type="props.type"
         :class="props.inputClass"
@@ -26,6 +26,7 @@
 </template>
 <script setup lang="ts">
 import { Field, ErrorMessage } from 'vee-validate'
+import type {Ref} from "vue";
 /* PROPS */
 const props = defineProps({
   value: {
@@ -63,6 +64,9 @@ const props = defineProps({
   },
 })
 
+/* REFS */
+const inputValue: Ref<string> = ref(props.value)
+
 /*  EMITS  */
 const emit = defineEmits<{
   'update:value': [value: string]
@@ -72,4 +76,10 @@ const emit = defineEmits<{
 const handleInput = (event: InputEvent) => {
   emit('update:value', (event.target as HTMLInputElement).value)
 }
+
+/* WATCHERS */
+watch(() => props.value, (value) => {
+  console.log('Value: ', value)
+  inputValue.value = value
+})
 </script>

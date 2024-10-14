@@ -1,5 +1,5 @@
 <template>
-  <Body class="bg-slate-100">
+  <Body class="bg-slate-100 overflow-y-hidden">
   <EpiNavbar />
   <slot />
   </Body>
