@@ -12,18 +12,67 @@
         v-show="!mapIsLoading"
         class="absolute inset-0 md:relative"
     >
-      <MapBox :is-loading="mapIsLoading" />
+      departure: {{ departure }}
+      <br>
+      destination: {{ destination }}
+      <br>
+      routePoints: {{ routePoints }}
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue'
-import MapBox from '~/components/navigations/MapBox.vue'
+import type { Ref } from 'vue'
+import TravelOrderResolverService from "~/core/services/TravelOrderResolverService";
+import type { FindRouteResponse } from "~/core/services/TravelOrderResolverService";
+import type {ErrorResponse} from "~/core/types/response";
+import NotyfService from "~/lib/services/NotyfService";
 
-const mapIsLoading = ref(true)
+/* METAS */
+useHead({
+  title: 'Carte de votre trajet',
+})
 
-setTimeout(() => {
+/* HOOKS */
+const route = useRoute()
+
+/* REFS */
+const mapIsLoading: Ref<boolean> = ref(true)
+const travelSentence: Ref<string> = ref(route.query.q?.toString() || '')
+const departure: Ref<string> = ref('')
+const destination: Ref<string> = ref('')
+const routePoints: Ref<string[]> = ref([])
+
+
+/* WATCHERS */
+watch(
+    () => route.query,
+    async (query: Record<string, any>) => {
+      travelSentence.value = query.q ? query.q.toString() : ''
+      await findRoute()
+    }
+)
+
+/* METHODS */
+const findRoute = async () => {
+  mapIsLoading.value = true
+  const findRouteResponse: FindRouteResponse | ErrorResponse = await TravelOrderResolverService.findRoute(travelSentence.value)
+
+  if ('detail' in findRouteResponse) {
+    const notyfService = new NotyfService()
+    return notyfService.error(findRouteResponse.detail)
+  }
+
+  departure.value = findRouteResponse.departure
+  destination.value = findRouteResponse.destination
+  routePoints.value = findRouteResponse.route
+
+
   mapIsLoading.value = false
-}, 2000)
+}
+
+/* LIFECYCLE */
+onMounted(async () => {
+  await findRoute()
+})
 </script>
