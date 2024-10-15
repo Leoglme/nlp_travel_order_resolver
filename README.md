@@ -73,8 +73,8 @@ git config lfs.https://gitea.crzcommon.com/crzgames/nlp_travel_order_resolver.gi
 
 ### Identification lors du clone du projet pour s'identifier au près de gitea.crzcommon.com
 ```bash
-Username: crzgames
-Password: Marylene59!!!!
+Username: Username
+Password: Password
 ```
 
 <br />

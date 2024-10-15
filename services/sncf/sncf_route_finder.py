@@ -18,7 +18,11 @@ class SNCFRouteFinder:
         with open(file_path, mode='r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             for row in tqdm(reader, desc="Loading stops", unit="stop"):
-                stops[row['stop_id']] = row['stop_name']
+                stops[row['stop_id']] = {
+                    'name': row['stop_name'],
+                    'lat': float(row['stop_lat']),
+                    'lon': float(row['stop_lon'])
+                }
         return stops
 
     @staticmethod
@@ -105,11 +109,12 @@ class SNCFRouteFinder:
 
     def get_stop_ids(self, city_name):
         """
-        Récupère les IDs des arrêts associés à une ville (plusieurs gares possibles).
+        Retrieves the IDs of the stops associated with a city (several stations possible).
         """
         stop_ids = []
-        for stop_id, stop_name_value in self.stops.items():
-            if city_name.lower() in stop_name_value.lower():
+        for stop_id, stop_data in self.stops.items():
+            stop_name = stop_data['name']  # Récupère le nom de l'arrêt
+            if city_name.lower() in stop_name.lower():
                 stop_ids.append(stop_id)
         return stop_ids
 

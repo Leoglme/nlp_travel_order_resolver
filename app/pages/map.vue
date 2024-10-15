@@ -24,7 +24,7 @@
 <script lang="ts" setup>
 import type { Ref } from 'vue'
 import TravelOrderResolverService from "~/core/services/TravelOrderResolverService";
-import type { FindRouteResponse } from "~/core/services/TravelOrderResolverService";
+import type { FindRouteResponse, RoutePoint } from "~/core/services/TravelOrderResolverService";
 import type {ErrorResponse} from "~/core/types/response";
 import NotyfService from "~/lib/services/NotyfService";
 
@@ -41,7 +41,7 @@ const mapIsLoading: Ref<boolean> = ref(true)
 const travelSentence: Ref<string> = ref(route.query.q?.toString() || '')
 const departure: Ref<string> = ref('')
 const destination: Ref<string> = ref('')
-const routePoints: Ref<string[]> = ref([])
+const routePoints: Ref<RoutePoint[]> = ref([])
 
 
 /* WATCHERS */

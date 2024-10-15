@@ -41,10 +41,17 @@ class ValidationResponse(BaseModel):
     reason: str
 
 
+class RoutePoint(BaseModel):
+    stop_name: str
+    stop_id: str
+    latitude: float
+    longitude: float
+
+
 class RouteResponse(BaseModel):
     departure: str
     destination: str
-    route: list[str]
+    route: list[RoutePoint]
 
 
 # 2. Route to convert audio file to text
@@ -89,7 +96,8 @@ async def validate_travel_intent(request: SentenceRequest):
 
     if not is_trip_related:
         logger.info(f"Non-trip-related sentence detected: {request.sentence}")
-        return ValidationResponse(is_valid=False, reason="Non-trip-related sentence detected.", is_correct_language=True,
+        return ValidationResponse(is_valid=False, reason="Non-trip-related sentence detected.",
+                                  is_correct_language=True,
                                   is_trip_related=False)
 
     logger.info(f"Trip-related sentence detected: {request.sentence}")
@@ -100,7 +108,6 @@ async def validate_travel_intent(request: SentenceRequest):
 # 4. Route to extract cities and find the SNCF route
 @app.post("/api/sncf/find-route", response_model=RouteResponse)
 async def find_route_sncf(request: SentenceRequest):
-    # Initialize the CamemBERTNERModel
     logger.info(f"Extracting trip details from: {request.sentence}")
     camembert_ner_model = CamemBERTNERModel()
     camembert_ner_model.load_model()
@@ -113,9 +120,25 @@ async def find_route_sncf(request: SentenceRequest):
 
     sncf_route_finder = SNCFRouteFinder()
     route = sncf_route_finder.find_shortest_route(departure, destination)
+
     if route:
-        logger.info(f"Route found from {departure} to {destination}: {route}")
-        return RouteResponse(departure=departure, destination=destination, route=route)
+        # Transform the result into a RoutePoint list
+        route_points = [
+            RoutePoint(
+                stop_name=sncf_route_finder.stops[stop_id]['name'],
+                stop_id=stop_id,
+                latitude=sncf_route_finder.stops[stop_id]['lat'],
+                longitude=sncf_route_finder.stops[stop_id]['lon']
+            )
+            for stop_id in route
+        ]
+
+        logger.info(f"Route found from {departure} to {destination}: {route_points}")
+        return RouteResponse(departure=departure, destination=destination, route=route_points)
     else:
         logger.error(f"No route found from {departure} to {destination}")
         raise HTTPException(status_code=404, detail=f"No route found from {departure} to {destination}.")
+
+
+
+
