@@ -1,38 +1,86 @@
-from models.travel_intent_classifier_model import TravelIntentClassifierModel
+import pandas as pd
+from rapidfuzz import process
 
-if __name__ == '__main__':
-    texts: list = [
-        "Je vais acheter des croissants à la boulangerie à Paris.",
-        "Nous partirons demain matin de Nice pour rejoindre Marseille.",
-        "Il a prévu de partir à vélo pour visiter le parc.",
-        "Je réserve un taxi pour aller de Lyon à Grenoble.",
-        "Je veux faire une balade en forêt à côté de chez moi.",
-        "Nous avons acheté des billets pour un train de Lille à Bordeaux.",
-        "Elle va partir de Montpellier en bus pour rejoindre Toulouse.",
-        "On va simplement passer la soirée chez un ami à Nantes.",
-        "Il m'a dit qu'il prévoyait de partir en vacances à Marseille.",
-        "Demain, je prends un avion de Paris à New York.",
-        "Je vais rendre visite à ma grand-mère à Lyon ce week-end.",
-        "Ils préparent un voyage de Paris à Amsterdam pour l'été prochain.",
-        "Je vais me balader dans le parc avec mon chien.",
-        "On se retrouve à Paris avant de partir pour Lille.",
-        "Elle a réservé un billet pour aller à Marseille en train.",
-        "Nous partirons de Toulouse pour une semaine à Nice.",
-        "Je vais acheter des légumes au marché à Bordeaux.",
-        "Il prévoit de conduire de Paris à Lyon pour les vacances.",
-        "Je vais faire du shopping à Nice ce samedi.",
-        "Elle prévoit de prendre un train de Paris à Lille demain matin."
-    ]
-    # Model for verify valid sentence (subject is Ok)
-    trip_intent_classifier_model = TravelIntentClassifierModel()
+# Chargement des fichiers CSV
+stops_df = pd.read_csv('assets/data_sncf/stops.txt')
+stop_times_df = pd.read_csv('assets/data_sncf/stop_times.txt')
+trips_df = pd.read_csv('assets/data_sncf/trips.txt')
+routes_df = pd.read_csv('assets/data_sncf/routes.txt')
 
-    # Map texts
-    for text in texts:
-        # Verify if the sentence is a trip-related sentence
-        prediction = trip_intent_classifier_model.predict(text)
+# Ajout des logs pour le suivi
+print("[INFO] Fichiers CSV chargés.")
 
-        # If the sentence is a trip-related sentence
-        if prediction == 1:
-            print("OK: {}".format(text))
-        else:
-            print("NOT_OK: {}".format(text))
+
+def find_closest_station(city_name, stops_df):
+    """Utilisation du fuzzy matching pour trouver l'arrêt le plus proche"""
+    stop_names = stops_df['stop_name'].values
+    print(f"[INFO] Recherche de la gare la plus proche pour {city_name}.")
+    closest_match = process.extractOne(f"Gare de {city_name}", stop_names)
+    if closest_match:
+        print(f"[INFO] Gare trouvée : {closest_match[0]}")
+        return stops_df[stops_df['stop_name'] == closest_match[0]]
+    print(f"[WARN] Aucun arrêt trouvé pour {city_name}.")
+    return None
+
+
+def find_trip_between_stations(departure_stop_id, arrival_stop_id, stop_times_df):
+    """Cherche tous les trajets qui passent par l'arrêt de départ et l'arrêt d'arrivée"""
+    print(f"[INFO] Recherche des trajets entre les arrêts {departure_stop_id} et {arrival_stop_id}.")
+
+    # Filtre pour les départs et arrivées
+    departure_times = stop_times_df[stop_times_df['stop_id'] == departure_stop_id]
+    arrival_times = stop_times_df[stop_times_df['stop_id'] == arrival_stop_id]
+
+    print(f"[INFO] Nombre de départs trouvés: {len(departure_times)}")
+    print(f"[INFO] Nombre d'arrivées trouvées: {len(arrival_times)}")
+
+    # Merge sur 'trip_id' pour trouver les trajets en commun
+    common_trips = pd.merge(departure_times, arrival_times, on='trip_id')
+    print(f"[INFO] Nombre de trajets communs trouvés : {len(common_trips)}")
+
+    # Filtrer les trajets où l'arrêt de départ est avant l'arrêt d'arrivée
+    valid_trips = common_trips[common_trips['stop_sequence_x'] < common_trips['stop_sequence_y']]
+    print(f"[INFO] Nombre de trajets valides (départ avant arrivée) : {len(valid_trips)}")
+
+    return valid_trips
+
+
+def display_trip_details(trips_df, valid_trips):
+    """Affiche les détails des trajets trouvés"""
+    if valid_trips.empty:
+        print("[WARN] Aucun trajet direct trouvé entre ces deux gares.")
+    else:
+        print("[INFO] Trajets possibles :")
+        for index, trip in valid_trips.iterrows():
+            trip_id = trip['trip_id']
+            route = trips_df[trips_df['trip_id'] == trip_id]['route_id'].values[0]
+            print(f" - Trajet ID: {trip_id} avec la route {route}")
+
+
+# Recherche des gares de départ et d'arrivée avec la méthode `find_closest_station`
+departure_stop = find_closest_station('Rennes', stops_df)
+arrival_stop = find_closest_station('Nantes', stops_df)
+
+# Vérification si les gares ont été trouvées
+if departure_stop is not None and not departure_stop.empty:
+    print(
+        f"[INFO] Gare de départ : {departure_stop['stop_name'].values[0]} (ID: {departure_stop['stop_id'].values[0]})")
+else:
+    print("[ERROR] Gare de départ non trouvée.")
+    exit(1)
+
+if arrival_stop is not None and not arrival_stop.empty:
+    print(f"[INFO] Gare d'arrivée : {arrival_stop['stop_name'].values[0]} (ID: {arrival_stop['stop_id'].values[0]})")
+else:
+    print("[ERROR] Gare d'arrivée non trouvée.")
+    exit(1)
+
+# Recherche des trajets entre les gares
+trips_between = find_trip_between_stations(
+    departure_stop['stop_id'].iloc[0],
+    arrival_stop['stop_id'].iloc[0],
+    stop_times_df
+)
+
+# Affichage des trajets disponibles
+display_trip_details(trips_df, trips_between)
