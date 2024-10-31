@@ -1,6 +1,7 @@
 import csv
 from transformers import CamembertTokenizerFast
 
+
 class NERDataPreparer:
     def __init__(self, csv_file):
         self.csv_file = csv_file

@@ -12,8 +12,8 @@ This class is responsible for the initialization and training of a CamemBERT mod
 
 
 class CamemBERTNERModel:
-    def __init__(self, model_name="camembert-base", train_file="datasets/sentences_with_cities.csv", num_labels=3,
-                 output_dir="model_output/camembert_ner", log_dir="logs/camembert_ner"):
+    def __init__(self, model_name="camembert-base", train_file="datasets/camembert_ner_dataset.csv", num_labels=3,
+                 output_dir="model_output/camembert_ner", log_dir="logs/old_camembert_ner"):
         self.model_name = model_name
         self.train_file = train_file
         self.num_labels = num_labels  # For example : 3 (O, B-city, I-city)
@@ -162,17 +162,17 @@ class CamemBERTNERModel:
                 else:
                     label_ids.append(-100)  # Ignore sub-tokens
                 previous_word_idx = word_idx
+
             labels.append(label_ids)
 
         tokenized_inputs["labels"] = labels
 
-        # Adds a length consistency check
+        # Vérification de la consistance entre tokens et labels
         for i, example in enumerate(examples):
             assert len(tokenized_inputs["input_ids"][i]) == len(tokenized_inputs["labels"][i]), \
-                f"Inconsistency with example {i}: {len(tokenized_inputs['input_ids'][i])} tokens, {len(tokenized_inputs['labels'][i])} labels"
+                f"Inconsistency in example {i}: tokens length {len(tokenized_inputs['input_ids'][i])} vs labels length {len(tokenized_inputs['labels'][i])}"
 
         return tokenized_inputs
-
     """
     Loads and prepares the dataset for training.
     """
@@ -209,25 +209,24 @@ class CamemBERTNERModel:
     """
 
     def extract_trip_details(self, text):
-        # Tokenize the provided text
+        """
+        Extrait les détails de départ et destination d'un texte, avec vérification de cohérence.
+        """
+        # Tokenize le texte fourni
         tokens = self.tokenizer(text, return_tensors="pt", truncation=True, is_split_into_words=False)
         tokens = tokens.to(self.model.device)
 
-        # Get predictions
+        # Obtenir les prédictions
         with torch.no_grad():
             output = self.model(**tokens)
         predictions = torch.argmax(output.logits, dim=2)
         labels = predictions.squeeze().tolist()
 
-        # Get tokens and word_ids
-        input_ids = tokens['input_ids'].squeeze().tolist()
-        word_ids = self.tokenizer(text,
-                                  return_offsets_mapping=False).word_ids()
-        self.tokenizer.convert_ids_to_tokens(input_ids)
-
+        # Obtenir les tokens et word_ids pour l'alignement
+        word_ids = self.tokenizer(text, return_offsets_mapping=False).word_ids()
         words = text.split()
 
-        # Reconstruction of labels by word
+        # Reconstruction des labels par mot
         word_labels = []
         previous_word_idx = None
         for idx, word_idx in enumerate(word_ids):
@@ -235,17 +234,19 @@ class CamemBERTNERModel:
                 word_labels.append(labels[idx])
                 previous_word_idx = word_idx
 
-        # Checks that the number of labels matches the number of words
-        if len(word_labels) != len(words):
-            print(f"Warning: labels name ({len(word_labels)}) does not match the number of words ({len(words)})")
-
-        # Cities extraction
-        departure = None
-        destination = None
+        # Extraction des villes
+        departure, destination = None, None
         for word, label in zip(words, word_labels):
-            if label == 1:
+            if label == 1:  # B-city
                 departure = word
-            elif label == 2:
+            elif label == 2:  # I-city
                 destination = word
 
-        return departure, destination
+        # Vérification de cohérence : valide uniquement si les entités sont cohérentes en contexte
+        if departure and destination:
+            return departure, destination
+        elif departure or destination:
+            # Si une seule entité est trouvée, mais semble être isolée, la suppression peut être pertinente
+            return None, None
+        else:
+            return None, None
