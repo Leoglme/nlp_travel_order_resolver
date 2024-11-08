@@ -19,3 +19,8 @@ pydantic
 python-multipart
 uvicorn
 pydub
+pandas
+unidecode
+rapidfuzz
+geopy
+aiohttp

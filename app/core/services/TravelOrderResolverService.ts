@@ -1,13 +1,6 @@
 import BaseApiService from '@/core/services/BaseApiService'
 import type { ErrorResponse } from '~/core/types/response'
 
-export type RoutePoint = {
-    stop_name: string
-    stop_id: string
-    latitude: number
-    longitude: number
-}
-
 export type ValidateTravelIntentResponse = {
     is_valid: boolean
     reason: string
@@ -15,11 +8,22 @@ export type ValidateTravelIntentResponse = {
     is_correct_language: boolean
 }
 
+export type RoutePoint = {
+    id: string
+    name: string
+    latitude: number
+    longitude: number
+    travel_time: number
+    stop_name: string
+}
+
 export type FindRouteResponse = {
     departure: string
     destination: string
     route: RoutePoint[]
+    total_travel_time: number
 }
+
 
 export default class TravelOrderResolverService extends BaseApiService {
 

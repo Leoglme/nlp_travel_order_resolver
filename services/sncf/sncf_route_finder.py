@@ -1,144 +1,136 @@
 import csv
 import heapq
-from tqdm import tqdm
-from collections import defaultdict
+from typing import List, Dict, Tuple
 
+class RoutePoint:
+    """
+    A class representing a point on the route with essential details.
+
+    Attributes:
+        point_id (str): Unique identifier for the route point (station or stop ID).
+        name (str): Name of the route point (station or city).
+        latitude (float): Latitude of the route point.
+        longitude (float): Longitude of the route point.
+    """
+    def __init__(self, point_id: str, name: str, latitude: float, longitude: float):
+        self.point_id = point_id
+        self.name = name
+        self.latitude = latitude
+        self.longitude = longitude
 
 class SNCFRouteFinder:
+    """
+    A class to find the shortest route between two points in a rail network.
+
+    Attributes:
+        graph (dict): A dictionary representing the graph of connected routes.
+        locations (dict): A dictionary to store station data with coordinates.
+    """
+
     def __init__(self):
-        self.stops = self.load_stops()
-        self.routes = self.load_routes()
-        self.stop_times = self.load_stop_times()
-        self.graph = self.build_graph_optimized()  # Utilisation de la nouvelle méthode
-
-    @staticmethod
-    def load_stops():
-        stops = {}
-        file_path = 'assets/data_sncf/stops.txt'
-        with open(file_path, mode='r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            for row in tqdm(reader, desc="Loading stops", unit="stop"):
-                stops[row['stop_id']] = {
-                    'name': row['stop_name'],
-                    'lat': float(row['stop_lat']),
-                    'lon': float(row['stop_lon'])
-                }
-        return stops
-
-    @staticmethod
-    def load_routes():
-        file_path = 'assets/data_sncf/routes.txt'
-        routes = {}
-        with open(file_path, mode='r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            for row in tqdm(reader, desc="Loading routes", unit="route"):
-                routes[row['route_id']] = row['route_long_name']
-        return routes
-
-    @staticmethod
-    def load_stop_times():
-        file_path = 'assets/data_sncf/stop_times.txt'
-        stop_times = defaultdict(list)  # Utilisation d'un defaultdict pour stocker par trip_id
-        with open(file_path, mode='r', encoding='utf-8') as file:
-            reader = csv.DictReader(file)
-            for row in tqdm(reader, desc="Loading stop times", unit="stop time"):
-                stop_times[row['trip_id']].append({
-                    'trip_id': row['trip_id'],
-                    'stop_id': row['stop_id'],
-                    'arrival_time': row['arrival_time'],
-                    'departure_time': row['departure_time'],
-                    'stop_sequence': int(row['stop_sequence'])
-                })
-        return stop_times
-
-    def build_graph_optimized(self):
-        graph = defaultdict(list)
-
-        for trip_id, stop_times in tqdm(self.stop_times.items(), desc="Building graph", unit="trip"):
-            # Trier par 'stop_sequence' pour que les arrêts soient dans l'ordre
-            stop_times = sorted(stop_times, key=lambda x: x['stop_sequence'])
-
-            for i in range(len(stop_times) - 1):
-                current_stop = stop_times[i]
-                next_stop = stop_times[i + 1]
-                # Calcul du temps entre les arrêts actuels et suivants
-                time_diff = self.calculate_time_difference(current_stop, next_stop)
-                graph[current_stop['stop_id']].append((next_stop['stop_id'], time_diff))
-
-        return graph
-
-    @staticmethod
-    def calculate_time_difference(stop_time, next_stop_time):
-        h1, m1, _ = map(int, stop_time['departure_time'].split(':'))
-        h2, m2, _ = map(int, next_stop_time['arrival_time'].split(':'))
-        return (h2 - h1) * 60 + (m2 - m1)
-
-    def find_shortest_route(self, departure, destination):
-        departure_ids = self.get_stop_ids(departure)
-        destination_ids = self.get_stop_ids(destination)
-
-        if not departure_ids or not destination_ids:
-            return None
-
-        # Trouver le meilleur itinéraire entre toutes les combinaisons de gares de départ et d'arrivée
-        best_route = None
-        shortest_time = float('inf')
-
-        for dep_id in departure_ids:
-            for dest_id in destination_ids:
-                route = self.dijkstra(dep_id, dest_id)
-                if route:
-                    # Récupérer les informations d'arrêt complètes pour calculer le temps total
-                    route_time = sum(
-                        self.calculate_time_difference(self.get_stop_time(route[i]), self.get_stop_time(route[i + 1]))
-                        for i in range(len(route) - 1)
-                    )
-                    if route_time < shortest_time:
-                        best_route = route
-                        shortest_time = route_time
-
-        return best_route
-
-    def get_stop_time(self, stop_id):
-        """Récupère l'arrêt complet (avec heures d'arrivée et de départ) basé sur le stop_id"""
-        for trip in self.stop_times.values():
-            for stop in trip:
-                if stop['stop_id'] == stop_id:
-                    return stop
-        return None
-
-    def get_stop_ids(self, city_name):
         """
-        Retrieves the IDs of the stops associated with a city (several stations possible).
+        Initializes the SncfRouteFinder by loading the route data from a CSV file.
         """
-        stop_ids = []
-        for stop_id, stop_data in self.stops.items():
-            stop_name = stop_data['name']  # Récupère le nom de l'arrêt
-            if city_name.lower() in stop_name.lower():
-                stop_ids.append(stop_id)
-        return stop_ids
+        self.csv_file_path = 'assets/data_sncf/organized_trips.csv'
+        self.graph = {}  # adjacency list representation of graph
+        self.locations = {}  # to store station data with coordinates
+        self._load_data()
 
-    def dijkstra(self, start, goal):
-        queue = [(0, start, [])]
+    def _load_data(self):
+        """
+        Loads route data from the CSV file and initializes the graph and locations.
+
+        Each route between two stations is stored as an edge in the graph with
+        travel time as the weight, and stations are stored in the locations dictionary.
+        """
+        with open(self.csv_file_path, 'r', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                dep, arr = row['departure_city'], row['arrival_city']
+                travel_time = int(row['travel_time'])  # travel time in minutes
+
+                # Convert coordinates to float and store locations
+                dep_coords = (float(row['departure_coordinates'].split(',')[0]), float(row['departure_coordinates'].split(',')[1]))
+                arr_coords = (float(row['arrival_coordinates'].split(',')[0]), float(row['arrival_coordinates'].split(',')[1]))
+
+                # Create or update the location dictionaries
+                if dep not in self.locations:
+                    self.locations[dep] = RoutePoint(row['departure_station'], dep, *dep_coords)
+                if arr not in self.locations:
+                    self.locations[arr] = RoutePoint(row['arrival_station'], arr, *arr_coords)
+
+                # Add the edges in both directions since routes are bidirectional
+                if dep not in self.graph:
+                    self.graph[dep] = []
+                if arr not in self.graph:
+                    self.graph[arr] = []
+                self.graph[dep].append((arr, travel_time))
+                self.graph[arr].append((dep, travel_time))
+
+    def _dijkstra(self, start: str, end: str) -> Tuple[List[Tuple[str, int]], int]:
+        """
+        Finds the shortest path and calculates the total travel time between two stations using Dijkstra's algorithm.
+
+        Args:
+            start (str): The starting station name.
+            end (str): The destination station name.
+
+        Returns:
+            Tuple[List[Tuple[str, int]], int]: A tuple with a list of tuples (station, cumulative time at each station)
+                                               representing the shortest path and the total travel time.
+        """
+        queue = [(0, start, [])]  # priority queue of (total_travel_time, station, path)
         visited = set()
-        total_stops = len(self.graph)  # Number of stops to give tqdm an idea of total progress
 
-        with tqdm(total=total_stops, desc="Finding shortest route", unit="stop") as progress_bar:
-            while queue:
-                (cost, node, path) = heapq.heappop(queue)
-                if node in visited:
-                    continue
+        while queue:
+            (travel_time, station, path) = heapq.heappop(queue)
+            if station in visited:
+                continue
+            visited.add(station)
 
-                visited.add(node)
-                path = path + [node]
+            # Record path with current station and cumulative travel time
+            path = path + [(station, travel_time)]
+            if station == end:
+                return path, travel_time  # Return path with cumulative times and total travel time
 
-                if node == goal:
-                    return path
+            for neighbor, time in self.graph.get(station, []):
+                if neighbor not in visited:
+                    heapq.heappush(queue, (travel_time + time, neighbor, path))
 
-                for neighbor, weight in self.graph.get(node, []):
-                    if neighbor not in visited:
-                        heapq.heappush(queue, (cost + weight, neighbor, path))
+        return [], 0
 
-                progress_bar.update(1)
+    def find_shortest_route(self, departure: str, destination: str) -> Dict:
+        """
+        Finds the shortest route between departure and destination stations.
 
-        return None
+        Args:
+            departure (str): The name of the departure city.
+            destination (str): The name of the destination city.
+
+        Returns:
+            Dict: Contains departure, destination, route points, each segment's travel time, and total travel time.
+        """
+        path_with_times, total_travel_time = self._dijkstra(departure, destination)
+        if not path_with_times:
+            return {"error": "No route found between the specified stations."}
+
+        route = []
+        previous_time = 0
+        for station, cumulative_time in path_with_times:
+            location = self.locations[station]
+            segment_time = cumulative_time - previous_time  # Calculate travel time for this segment
+            route.append({
+                "id": location.point_id,
+                "name": location.name,
+                "latitude": location.latitude,
+                "longitude": location.longitude,
+                "travel_time": segment_time
+            })
+            previous_time = cumulative_time
+
+        return {
+            "departure": departure,
+            "destination": destination,
+            "route": route,
+            "total_travel_time": total_travel_time  # Total travel time in minutes
+        }

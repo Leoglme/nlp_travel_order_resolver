@@ -1,5 +1,5 @@
 <template>
-  <div class="relative md:grid md:grid-cols-[500px,1fr] h-[calc(100vh-72px)]">
+  <div class="relative grid md:grid-cols-[500px_minmax(0,1fr)] h-full md:h-[calc(100vh-72px)] overflow-y-auto py-4 gap-4 px-4 bg-[#FEF2E5]">
     <div
         v-if="mapIsLoading"
         class="absolute inset-0 z-20 flex items-center justify-center"
@@ -7,16 +7,20 @@
       <i class="animate-spin text-4xl text-secondary-700 fas fa-spinner"></i>
     </div>
 
+    <TimelineItinerary
+        v-if="routeResponse"
+        :routeResponse="routeResponse"
+    />
+
     <!-- Map Div -->
     <div
         v-show="!mapIsLoading"
-        class="absolute inset-0 md:relative"
+        class="inset-0 relative w-full h-full"
     >
-      departure: {{ departure }}
-      <br>
-      destination: {{ destination }}
-      <br>
-      routePoints: {{ routePoints }}
+      <MapItinerary
+          v-if="routeResponse"
+          :data="routeResponse"
+      />
     </div>
   </div>
 </template>
@@ -25,8 +29,16 @@
 import type { Ref } from 'vue'
 import TravelOrderResolverService from "~/core/services/TravelOrderResolverService";
 import type { FindRouteResponse, RoutePoint } from "~/core/services/TravelOrderResolverService";
-import type {ErrorResponse} from "~/core/types/response";
+import type { ErrorResponse } from "~/core/types/response";
 import NotyfService from "~/lib/services/NotyfService";
+import MapItinerary from "~/components/navigations/MapItinerary.vue";
+import TimelineItinerary from "~/components/navigations/TimelineItinerary.vue";
+
+function formatTime(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return `${hours}h ${remainingMinutes}m`;
+}
 
 /* METAS */
 useHead({
@@ -42,6 +54,7 @@ const travelSentence: Ref<string> = ref(route.query.q?.toString() || '')
 const departure: Ref<string> = ref('')
 const destination: Ref<string> = ref('')
 const routePoints: Ref<RoutePoint[]> = ref([])
+const routeResponse: Ref<FindRouteResponse | null> = ref(null)
 
 
 /* WATCHERS */
@@ -57,6 +70,7 @@ watch(
 const findRoute = async () => {
   mapIsLoading.value = true
   const findRouteResponse: FindRouteResponse | ErrorResponse = await TravelOrderResolverService.findRoute(travelSentence.value)
+  routeResponse.value = findRouteResponse
 
   if ('detail' in findRouteResponse) {
     const notyfService = new NotyfService()

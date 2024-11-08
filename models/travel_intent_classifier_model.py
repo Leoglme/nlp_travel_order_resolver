@@ -4,6 +4,7 @@ import numpy as np
 import evaluate
 from services.system_manager import SystemManager
 
+
 """
 This class is responsible for training a DistilBERT-based model to classify whether
 a sentence refers to a trip (departure and arrival cities) or not.

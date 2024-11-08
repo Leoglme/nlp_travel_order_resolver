@@ -25,9 +25,11 @@ export default defineNuxtConfig({
       ],
     },
   },
+
   ssr: true,
   devtools: { enabled: true },
   components: true,
+
   modules: [
     '@nuxtjs/sitemap',
     '@nuxtjs/google-fonts',
@@ -36,13 +38,18 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxt/image',
   ],
+
   pinia: {
     storesDirs: ['./stores/**'],
   },
+
   plugins: [{ src: '~/plugins/vee-validate.ts', mode: 'client' }],
+
   googleFonts: {
     families: {
       Poppins: true,
     },
   },
+
+  compatibilityDate: '2024-10-16',
 })

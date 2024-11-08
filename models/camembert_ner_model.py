@@ -1,251 +1,198 @@
-import torch
-from transformers import CamembertForTokenClassification, CamembertTokenizerFast, Trainer, TrainingArguments
-from datasets import Dataset
-import evaluate
+from transformers import CamembertTokenizerFast, CamembertForTokenClassification, Trainer, TrainingArguments
+from datasets import load_dataset
 import numpy as np
-from services.system_manager import SystemManager
-from services.ner_data_preparer import NERDataPreparer
+import evaluate
 
-"""
-This class is responsible for the initialization and training of a CamemBERT model for named entity recognition.
-"""
+from models.travel_intent_classifier_model import TravelIntentClassifierModel
 
 
-class CamemBERTNERModel:
-    def __init__(self, model_name="camembert-base", train_file="datasets/sentences_with_cities.csv", num_labels=3,
-                 output_dir="model_output/camembert_ner", log_dir="logs/camembert_ner"):
+class CamembertNERModel:
+    def __init__(self, model_name="camembert-base", num_labels=5, batch_size=4, epochs=20,
+                 output_dir="./model_output/camembert_ner", log_dir="./logs/camembert_ner"):
+        """
+        Initializes the CamembertNERModel with the specified parameters.
+
+        Args:
+            model_name (str): Name of the CamemBERT model to use.
+            num_labels (int): Number of output labels (3 for departure, destination, and other).
+            batch_size (int): Batch size for training and evaluation.
+            epochs (int): Number of training epochs.
+            output_dir (str): Directory where the model output will be saved.
+        """
         self.model_name = model_name
-        self.train_file = train_file
-        self.num_labels = num_labels  # For example : 3 (O, B-city, I-city)
+        self.num_labels = num_labels
+        self.batch_size = batch_size
+        self.epochs = epochs
         self.output_dir = output_dir
         self.log_dir = log_dir
 
-        # Initialize model and tokenizer attributes to None
-        self.model = None
-        self.tokenizer = None
-        self.ner_data_preparer = NERDataPreparer(self.train_file)
+        self.tokenizer = CamembertTokenizerFast.from_pretrained(self.model_name)
+        self.model = CamembertForTokenClassification.from_pretrained(self.model_name, num_labels=self.num_labels)
 
-    """
-    Loads the CamemBERT model and tokenizer from the output directory.
-    """
+        # Initializing the intent classification model
+        self.intent_classifier = TravelIntentClassifierModel()
 
-    def load_model(self):
-        if SystemManager.directory_exists(self.output_dir):
-            print("Loading the trained model...")
-            self.model = CamembertForTokenClassification.from_pretrained(self.output_dir)
-            self.tokenizer = CamembertTokenizerFast.from_pretrained(self.output_dir)
-            # self.model = self.model.cuda() if torch.cuda.is_available() else self.model.cpu()
-        else:
-            print(f"Error: No models found in {self.output_dir}. Please train a model first.")
+    @staticmethod
+    def load_data(csv_file):
+        dataset = load_dataset('csv', data_files=csv_file)
+        dataset = dataset['train'].train_test_split(test_size=0.2)
+        return dataset
 
-    """
-    Initializes and trains a new CamemBERT model for named entity recognition.
-    """
+    def tokenize_and_align_labels(self, examples):
+        # Tokenisation avec padding et troncation
+        tokenized_inputs = self.tokenizer(examples['text'], padding='max_length', truncation=True,
+                                          is_split_into_words=False)
+
+        labels = []
+        for i, (text, departure, destination) in enumerate(
+                zip(examples['text'], examples['departure'], examples['destination'])):
+            word_ids = tokenized_inputs.word_ids(batch_index=i)
+            label_ids = [-100] * len(word_ids)
+
+            departure_tokens = self.tokenizer.tokenize(departure) if departure else []
+            destination_tokens = self.tokenizer.tokenize(destination) if destination else []
+
+            dep_idx, des_idx = 0, 0  # Pointeurs pour avancer sur les tokens de départ et d'arrivée
+
+            for idx, word_id in enumerate(word_ids):
+                if word_id is None:
+                    continue
+                token = tokenized_inputs.tokens(batch_index=i)[idx]
+
+                # Ignorer les tokens spéciaux pour les labels
+                if token in ["<s>", "</s>", "<pad>"]:
+                    continue
+
+                # Labels pour les villes de départ
+                if dep_idx < len(departure_tokens) and token == departure_tokens[dep_idx]:
+                    label_ids[idx] = 1 if dep_idx == 0 else 3  # "B-DEP" ou "I-DEP"
+                    dep_idx += 1
+                elif des_idx < len(destination_tokens) and token == destination_tokens[des_idx]:
+                    label_ids[idx] = 2 if des_idx == 0 else 4  # "B-ARR" ou "I-ARR"
+                    des_idx += 1
+                else:
+                    label_ids[idx] = 0  # O, autre
+
+            labels.append(label_ids)
+
+        tokenized_inputs["labels"] = labels
+        return tokenized_inputs
+
+    @staticmethod
+    def compute_metrics(p):
+        metric = evaluate.load("seqeval")
+
+        predictions, labels = p
+        predictions = np.argmax(predictions, axis=2)
+
+        label_list = ["O", "B-DEP", "B-ARR", "I-DEP", "I-ARR"]
+
+        true_predictions = [
+            [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
+            for prediction, label in zip(predictions, labels)
+        ]
+        true_labels = [
+            [label_list[l] for (p, l) in zip(prediction, label) if l != -100]
+            for prediction, label in zip(predictions, labels)
+        ]
+
+        results = metric.compute(predictions=true_predictions, references=true_labels)
+        return {
+            "precision": results["overall_precision"],
+            "recall": results["overall_recall"],
+            "f1": results["overall_f1"],
+            "accuracy": results["overall_accuracy"],
+        }
 
     def init_and_train_model(self):
-        SystemManager.clean_directories([self.output_dir, self.log_dir])
-
-        print("Initialization of the CamemBERT model...")
-        self.model = CamembertForTokenClassification.from_pretrained(self.model_name, num_labels=self.num_labels)
-        self.model = self.model.cuda() if torch.cuda.is_available() else self.model.cpu()
-        self.tokenizer = CamembertTokenizerFast.from_pretrained(self.model_name)
-
-        dataset = self.load_and_prepare_data()
-
-        # Check valid examples
-        def is_valid_example(example):
-            valid = 'tokens' in example and 'ner_tags' in example and example['tokens'] and example['ner_tags']
-            if not valid:
-                print(f"Invalid example found: {example}")
-            return valid
-
-        dataset = dataset.filter(is_valid_example)
-
-        if len(dataset) == 0:
-            raise ValueError("The dataset is empty after filtering. Check the data before starting the workout.")
-
-        # Apply tokenization and label alignment
-        tokenized_dataset = dataset.map(self.tokenize_and_align_labels, batched=True,
-                                        remove_columns=dataset.column_names)
+        dataset_path = 'datasets/camembert_ner_dataset.csv'
+        dataset = self.load_data(dataset_path)
+        tokenized_datasets = dataset.map(self.tokenize_and_align_labels, batched=True)
 
         training_args = TrainingArguments(
             output_dir=self.output_dir,
-            eval_strategy="epoch",
+            evaluation_strategy="epoch",
+            save_strategy="epoch",
             learning_rate=2e-5,
-            per_device_train_batch_size=32,
-            per_device_eval_batch_size=32,
-            num_train_epochs=10,
+            per_device_train_batch_size=self.batch_size,  # Réduire la taille du batch
+            per_device_eval_batch_size=self.batch_size,  # Réduire la taille du batch
+            num_train_epochs=self.epochs,
             weight_decay=0.01,
             logging_dir=self.log_dir,
             logging_steps=10,
-            fp16=True,
-            # debug="underflow_overflow"
+            load_best_model_at_end=True,
         )
-
-        metric = evaluate.load("seqeval")
-
-        def compute_metrics(p):
-            predictions, labels = p
-
-            if isinstance(predictions, np.ndarray):
-                predictions = torch.tensor(predictions)
-
-            predictions = torch.argmax(predictions, dim=2)
-
-            label_list = ["O", "B-city", "I-city"]
-
-            true_predictions = [
-                [label_list[pred] for (pred, label) in zip(prediction, label) if label != -100]
-                for prediction, label in zip(predictions, labels)
-            ]
-            true_labels = [
-                [label_list[l] for l in label if l != -100]
-                for label in labels
-            ]
-
-            results = metric.compute(predictions=true_predictions, references=true_labels, zero_division=0)
-            return {
-                "precision": results["overall_precision"],
-                "recall": results["overall_recall"],
-                "f1": results["overall_f1"],
-                "accuracy": results["overall_accuracy"],
-            }
 
         trainer = Trainer(
             model=self.model,
             args=training_args,
-            train_dataset=tokenized_dataset,
-            eval_dataset=tokenized_dataset,
+            train_dataset=tokenized_datasets["train"],
+            eval_dataset=tokenized_datasets["test"],
             tokenizer=self.tokenizer,
-            compute_metrics=compute_metrics,
+            compute_metrics=self.compute_metrics,
         )
 
-        try:
-            trainer.train()
-        except Exception as e:
-            print(f"Error during training: {e}")
-            raise
-        self.save_model()
-
-    """
-    Saves the fine-tuned model.
-    """
-
-    def save_model(self):
-        print(f"Saving the model in {self.output_dir}...")
+        trainer.train()
+        trainer.save_model(self.output_dir)
         self.model.save_pretrained(self.output_dir)
         self.tokenizer.save_pretrained(self.output_dir)
 
-    """
-    Tokenizes the data and aligns the labels.
-    """
+    def load_model(self):
+        self.model = CamembertForTokenClassification.from_pretrained(self.output_dir)
+        self.tokenizer = CamembertTokenizerFast.from_pretrained(self.output_dir)
 
-    def tokenize_and_align_labels(self, examples):
-        tokenized_inputs = self.tokenizer(
-            examples["tokens"],
-            truncation=True,
-            is_split_into_words=True,
-            padding="max_length",
-            max_length=128
-        )
+    def extract_trip_details(self, sentence):
+        # Utiliser le modèle de classification d'intention pour vérifier si c'est un trajet
+        is_trip_intent = self.intent_classifier.predict(sentence) == 1
 
-        labels = []
-        for i, label in enumerate(examples["ner_tags"]):
-            word_ids = tokenized_inputs.word_ids(batch_index=i)
-            previous_word_idx = None
-            label_ids = []
-            for word_idx in word_ids:
-                if word_idx is None:
-                    label_ids.append(-100)  # Ignore padding tokens
-                elif word_idx != previous_word_idx:
-                    label_ids.append(label[word_idx])
-                else:
-                    label_ids.append(-100)  # Ignore sub-tokens
-                previous_word_idx = word_idx
-            labels.append(label_ids)
+        # Si ce n'est pas une demande de trajet, retourner None pour départ et destination
+        if not is_trip_intent:
+            return None, None
 
-        tokenized_inputs["labels"] = labels
+        # Préparer les inputs
+        inputs = self.tokenizer(sentence, return_tensors="pt", padding=True, truncation=True)
+        outputs = self.model(**inputs).logits
+        predictions = np.argmax(outputs.detach().numpy(), axis=2)
 
-        # Adds a length consistency check
-        for i, example in enumerate(examples):
-            assert len(tokenized_inputs["input_ids"][i]) == len(tokenized_inputs["labels"][i]), \
-                f"Inconsistency with example {i}: {len(tokenized_inputs['input_ids'][i])} tokens, {len(tokenized_inputs['labels'][i])} labels"
+        tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"].numpy()[0])
 
-        return tokenized_inputs
+        departure_city = None
+        destination_city = None
+        current_dep, current_des = [], []
 
-    """
-    Loads and prepares the dataset for training.
-    """
-
-    def load_and_prepare_data(self):
-        print("Loading the CSV file...")
-        dataset = Dataset.from_csv(self.train_file, encoding="utf-8")
-        dataset = dataset.with_format("torch")
-
-        for idx, example in enumerate(dataset):
-            text = example['text']
-            departure = example['departure']
-            destination = example['destination']
-
-            if not text or not departure or not destination:
-                print(f"Invalid example at index {idx}: {example}")
+        for token, prediction in zip(tokens, predictions[0]):
+            # Ignorer les tokens spéciaux
+            if token in ["<s>", "</s>", "<pad>"]:
                 continue
 
-        tokens_list, ner_tags_list = self.ner_data_preparer.generate_tokens_and_ner_tags()
+            if prediction == 1:  # "B-DEP"
+                if current_dep:
+                    departure_city = " ".join(current_dep)
+                    current_dep = []
+                current_dep.append(token.replace("▁", ""))
+            elif prediction == 3:  # "I-DEP"
+                current_dep.append(token.replace("▁", ""))
+            elif prediction == 2:  # "B-ARR"
+                if current_des:
+                    destination_city = " ".join(current_des)
+                    current_des = []
+                current_des.append(token.replace("▁", ""))
+            elif prediction == 4:  # "I-ARR"
+                current_des.append(token.replace("▁", ""))
+            else:
+                # Finaliser les tokens accumulés s'il y a un changement
+                if current_dep:
+                    departure_city = " ".join(current_dep)
+                    current_dep = []
+                if current_des:
+                    destination_city = " ".join(current_des)
+                    current_des = []
 
-        # Checking lengths
-        assert len(tokens_list) == len(ner_tags_list), "Mismatch entre tokens et NER tags"
+        # Si des tokens de départ ou de destination sont encore présents à la fin de la phrase, on les ajoute
+        if current_dep:
+            departure_city = " ".join(current_dep)
+        if current_des:
+            destination_city = " ".join(current_des)
 
-        prepared_dataset = {
-            "text": [example["text"] for example in dataset],
-            "tokens": tokens_list,
-            "ner_tags": ner_tags_list
-        }
+        return departure_city, destination_city
 
-        return Dataset.from_dict(prepared_dataset)
-
-    """
-    Extracts the departure and destination cities from the provided text.
-    """
-
-    def extract_trip_details(self, text):
-        # Tokenize the provided text
-        tokens = self.tokenizer(text, return_tensors="pt", truncation=True, is_split_into_words=False)
-        tokens = tokens.to(self.model.device)
-
-        # Get predictions
-        with torch.no_grad():
-            output = self.model(**tokens)
-        predictions = torch.argmax(output.logits, dim=2)
-        labels = predictions.squeeze().tolist()
-
-        # Get tokens and word_ids
-        input_ids = tokens['input_ids'].squeeze().tolist()
-        word_ids = self.tokenizer(text,
-                                  return_offsets_mapping=False).word_ids()
-        self.tokenizer.convert_ids_to_tokens(input_ids)
-
-        words = text.split()
-
-        # Reconstruction of labels by word
-        word_labels = []
-        previous_word_idx = None
-        for idx, word_idx in enumerate(word_ids):
-            if word_idx is not None and word_idx != previous_word_idx:
-                word_labels.append(labels[idx])
-                previous_word_idx = word_idx
-
-        # Checks that the number of labels matches the number of words
-        if len(word_labels) != len(words):
-            print(f"Warning: labels name ({len(word_labels)}) does not match the number of words ({len(words)})")
-
-        # Cities extraction
-        departure = None
-        destination = None
-        for word, label in zip(words, word_labels):
-            if label == 1:
-                departure = word
-            elif label == 2:
-                destination = word
-
-        return departure, destination
