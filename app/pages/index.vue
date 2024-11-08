@@ -101,8 +101,16 @@ const validateSentenceAndRedirectToMap = async () => {
     return notyfService.error(validateTravelIntentResponse.detail)
   }
 
+  console.log({
+    validateTravelIntentResponse
+  })
 
-  if(validateTravelIntentResponse.is_valid) {
+
+  if (!validateTravelIntentResponse.is_trip_related) {
+    validateSentenceErrorMessage.value = 'La phrase ne semble pas être liée à un trajet. Veuillez formuler une phrase indiquant un départ et une destination.'
+  } else if (!validateTravelIntentResponse.is_correct_language) {
+    validateSentenceErrorMessage.value = 'Le texte soumis est dans une autre langue. Merci de formuler votre phrase en français.'
+  } else if(validateTravelIntentResponse.is_valid) {
     const query = {
       q: sentence.value
     }
@@ -110,10 +118,6 @@ const validateSentenceAndRedirectToMap = async () => {
       name: 'map',
       query
     })
-  } else if (!validateTravelIntentResponse.is_trip_related) {
-    validateSentenceErrorMessage.value = 'La phrase ne semble pas être liée à un trajet. Veuillez formuler une phrase indiquant un départ et une destination.'
-  } else if (!validateTravelIntentResponse.is_correct_language) {
-    validateSentenceErrorMessage.value = 'Le texte soumis est dans une autre langue. Merci de formuler votre phrase en français.'
   } else {
     validateSentenceErrorMessage.value = 'Une erreur est survenue lors du traitement de votre demande.'
   }

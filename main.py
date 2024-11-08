@@ -4,7 +4,7 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 from models.travel_intent_classifier_model import TravelIntentClassifierModel
-from models.camembert_ner_model import CamemBERTNERModel
+from models.camembert_ner_model import CamembertNERModel
 from services.voice_to_text_converter import VoiceToTextConverter
 from services.language_detection import LanguageIdentification
 from services.sncf.sncf_route_finder import SNCFRouteFinder
@@ -41,8 +41,8 @@ if __name__ == '__main__':
         if prediction == 1:
             print("Trip-related sentence detected.")
 
-            # Initialize the CamemBERTNERModel
-            camembert_ner_model = CamemBERTNERModel()
+            # Initialize the CamembertNERModel
+            camembert_ner_model = CamembertNERModel()
             camembert_ner_model.load_model()
 
             # Extracting departure and destination cities from text

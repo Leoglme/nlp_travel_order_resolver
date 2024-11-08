@@ -8,7 +8,7 @@ from pydantic import BaseModel
 # Add the project root directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from api.services.audio_service import AudioService
-from models.camembert_ner_model import CamemBERTNERModel
+from models.camembert_ner_model import CamembertNERModel
 from models.travel_intent_classifier_model import TravelIntentClassifierModel
 from services.sncf.sncf_route_finder import SNCFRouteFinder
 from services.voice_to_text_converter import VoiceToTextConverter
@@ -42,16 +42,20 @@ class ValidationResponse(BaseModel):
 
 
 class RoutePoint(BaseModel):
-    stop_name: str
-    stop_id: str
+    id: str
+    name: str
     latitude: float
     longitude: float
+    travel_time: int
+    stop_name: str
+
 
 
 class RouteResponse(BaseModel):
     departure: str
     destination: str
     route: list[RoutePoint]
+    total_travel_time: int
 
 
 # 2. Route to convert audio file to text
@@ -109,7 +113,7 @@ async def validate_travel_intent(request: SentenceRequest):
 @app.post("/api/sncf/find-route", response_model=RouteResponse)
 async def find_route_sncf(request: SentenceRequest):
     logger.info(f"Extracting trip details from: {request.sentence}")
-    camembert_ner_model = CamemBERTNERModel()
+    camembert_ner_model = CamembertNERModel()
     camembert_ner_model.load_model()
     departure, destination = camembert_ner_model.extract_trip_details(request.sentence)
 
@@ -119,25 +123,32 @@ async def find_route_sncf(request: SentenceRequest):
                             detail="Unable to extract both departure and destination from the sentence.")
 
     sncf_route_finder = SNCFRouteFinder()
-    route = sncf_route_finder.find_shortest_route(departure, destination)
+    route_data = sncf_route_finder.find_shortest_route(departure, destination)
 
-    if route:
-        # Transform the result into a RoutePoint list
-        route_points = [
-            RoutePoint(
-                stop_name=sncf_route_finder.stops[stop_id]['name'],
-                stop_id=stop_id,
-                latitude=sncf_route_finder.stops[stop_id]['lat'],
-                longitude=sncf_route_finder.stops[stop_id]['lon']
-            )
-            for stop_id in route
-        ]
-
-        logger.info(f"Route found from {departure} to {destination}: {route_points}")
-        return RouteResponse(departure=departure, destination=destination, route=route_points)
-    else:
+    if "error" in route_data:
         logger.error(f"No route found from {departure} to {destination}")
         raise HTTPException(status_code=404, detail=f"No route found from {departure} to {destination}.")
+
+    # Build the response with route points and total travel time
+    route_points = [
+        RoutePoint(
+            id=point["id"],
+            name=point["name"],
+            latitude=point["latitude"],
+            longitude=point["longitude"],
+            travel_time=int(point.get("travel_time", 0)),
+            stop_name=point.get("stop_name", "")
+        )
+        for point in route_data["route"]
+    ]
+
+    # Return structured RouteResponse with total travel time as an integer
+    return RouteResponse(
+        departure=route_data["departure"],
+        destination=route_data["destination"],
+        route=route_points,
+        total_travel_time=int(route_data["total_travel_time"])
+    )
 
 
 

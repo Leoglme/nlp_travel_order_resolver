@@ -1,4 +1,9 @@
-from models.camembert_ner_model import CamemBERTNERModel
+import os
+
+# Hide TensorFlow warnings
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+from models.camembert_ner_model import CamembertNERModel
 
 # Liste des textes et des départs/arrivées attendus (None si aucun trajet)
 texts = [
@@ -42,7 +47,7 @@ texts = [
 ]
 
 # Initialiser le modèle
-camembert_ner_model = CamemBERTNERModel()
+camembert_ner_model = CamembertNERModel()
 camembert_ner_model.load_model()
 
 # Variables pour stocker les erreurs uniquement

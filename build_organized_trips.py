@@ -53,7 +53,7 @@ def find_stop_ids_by_city(cities):
 
 # Main function
 async def main():
-    cities = ['Rennes', 'Lyon']  # You can add more cities here
+    cities = ['Rennes', 'Paris', 'Bordeaux', 'Biarritz']  # You can add more cities here
     target_stop_ids = find_stop_ids_by_city(cities)
 
     # Load stop times data
