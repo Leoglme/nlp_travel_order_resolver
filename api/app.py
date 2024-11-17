@@ -2,6 +2,7 @@ import sys
 import os
 import logging
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -149,6 +150,14 @@ async def find_route_sncf(request: SentenceRequest):
         route=route_points,
         total_travel_time=int(route_data["total_travel_time"])
     )
+
+# 5. Route to serve the travel intent classifier evaluation report (HTML)
+@app.get("/api/travel_intent_classifier_evaluation/index.html")
+def travel_intent_classifier_evaluation_html():
+    file_path = "evaluations/travel_intent_classifier_evaluation/index.html"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"error": "File not found"}
 
 
 

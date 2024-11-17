@@ -24,3 +24,6 @@ unidecode
 rapidfuzz
 geopy
 aiohttp
+jupyter
+matplotlib
+sklearn

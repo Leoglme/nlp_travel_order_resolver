@@ -1,112 +1,149 @@
 # Travel Order Resolver
-A tool using Natural Language Processing (NLP) to extract travel details from French text inputs, identifying departure and destination points. It includes optional voice recognition and an algorithm for finding optimal travel routes.
+### Projet de Traitement d'Itinéraires en Langue Naturelle
 
-## 🛠 Tech Stack
-- Python (Language)
-- CI / CD (Github Actions)
-- Libraries:
-  - `SpeechRecognition`
-  - `fastText`
-  - `CamemBERT`
-  - `Transformers`
-- Docker
-- Kubernetes (Staging / Production)
+## Description
 
-<br /><br /><br /><br />
+Ce projet est une application de traitement du langage naturel (NLP) destinée à interpréter et traiter des demandes d'itinéraires en français. Le programme permet de détecter des intentions de voyage, d'extraire les villes de départ et d'arrivée, et d'optimiser le trajet en s'appuyant sur des données de réseau de transport SNCF. Les principales fonctionnalités incluent la reconnaissance vocale, la détection de la langue, la classification d'intention, l'extraction d'entités nommées et la recherche de trajet optimal.
 
-## 📚 WebSite
-- Production : https://travel-order.crzcommon.com
-- Staging : https://staging.travel-order.crzcommon.com  
+## Fonctionnalités
 
-<br /><br /><br /><br />
+- **Reconnaissance Vocale** : Conversion de la voix en texte pour les entrées audio.
+- **Détection de la Langue** : Vérifie que la demande est en français avant de la traiter.
+- **Classification de l'Intention** : Identifie les intentions de voyage.
+- **Extraction de Villes** : Identifie les villes de départ et de destination dans le texte.
+- **Optimisation de l'Itinéraire** : Trouve le meilleur trajet entre les villes de départ et de destination en utilisant les données SNCF.
 
-## ⚙️ Setup Environment Development
-### Installation de Git LFS
-#### Windows
-1. Téléchargez et installez Git LFS depuis [Git LFS Releases](https://github.com/git-lfs/git-lfs/releases).
-2. Suivez les instructions de l'installateur.
-3. Une fois l'installation terminée, ouvrez une invite de commande et exécutez :
-   ```bash
-   git lfs install
-   ```
+## Prérequis
 
-#### macOS
-1. Installez Git LFS en utilisant Homebrew :
-   ```bash
-   brew install git-lfs
-   ```
-2. Après l'installation, exécutez :
-   ```bash
-   git lfs install
-   ```
+Avant de commencer, assurez-vous d'avoir les éléments suivants installés :
 
-#### Linux
-1. Installez Git LFS en utilisant le gestionnaire de paquets de votre distribution. <br />
-   Ubuntu / Debian :
-   ```bash
-   sudo apt-get install git-lfs
-   ```
-2. Après l'installation, exécutez :
-   ```bash
-   git lfs install
-   ```
+- Python 3 ou supérieur
+- Pip pour gérer les paquets Python
+- Virtualenv (optionnel mais recommandé pour gérer l'environnement de développement)
 
-<br />
+## Installation
 
-### Clonage du Dépôt
-Clonez le dépôt :
+Clonez le dépôt, puis installez les dépendances nécessaires.
+
 ```bash
-git clone git@github.com:Leoglme/nlp_travel_order_resolver.git
+git clone https://github.com/Leoglme/nlp_travel_order_resolver
 cd nlp_travel_order_resolver
 ```
 
-<br />
+Créez un environnement virtuel (optionnel mais recommandé) :
 
-### Configuration du Token d'Accès pour les fichiers LFS
-Configurez le token d'accès LFS avec votre jeton personnel, pour pouvoir fetch les fichiers LFS :
 ```bash
-cd nlp_travel_order_resolver
-git config lfs.https://gitea.crzcommon.com/crzgames/nlp_travel_order_resolver.git/info/lfs.access token dd39e40af8323acc9aa3ee4fb6cee08fc75d497b
+python -m venv env
+source env/bin/activate  # Pour Linux/macOS
+# ou
+env\Scripts\activate.bat  # Pour Windows
 ```
 
-<br />
+Ensuite, installez les dépendances requises :
 
-### Identification lors du clone du projet pour s'identifier au près de gitea.crzcommon.com
 ```bash
-Username: Username
-Password: Password
+pip install -r requirements.txt
 ```
 
-<br />
+## Utilisation
 
-### Install dependencies
-1. Python >= 3.12 (LTS latest) : https://www.python.org/downloads/
-2. Setup Tensorflow in CPU / GPU : https://www.tensorflow.org/install/pip?hl=fr#windows-wsl2
-3. Install dependencies :
-    ```bash
-    pip install -r requirements.txt
-    ```
+L'application peut être utilisée via le terminal ou en exposant des endpoints d'API REST.
 
-<br /><br /><br /><br />
+### Utilisation depuis le Terminal
 
-## 🔄 Cycle Development
-1. Run project :
-    ```bash
-    py main.py
-    ```
-2. If there is a problem because of dependencies : 
-    ```bash
-    remove all packages: cat requirements.txt | xargs -n 1 pip uninstall -y
-    remove all packages in machine: pip freeze > requirements.txt && pip uninstall -y -r requirements.txt && rm requirements.txt
-    pip list
-    ```
+Lancez l'application en exécutant `main.py` et en fournissant des entrées texte ou audio.
 
-<br /><br /><br /><br />
+```bash
+python main.py
+```
 
-## 🚀 Production
-### ⚙️➡️ Automatic Distribution Process (CI / CD)
-#### Si c'est un nouveau projet suivez les instructions : 
-1. Ajoutez les SECRETS_GITHUB pour :
-   - KUBECONFIG
-   - PAT (crée un nouveau token si besoin sur le site de GitHub puis dans le menu du "Profil" -> "Settings" -> "Developper Settings" -> "Personal Access Tokens" -> Tokens (classic))
-   
+- **Texte** : Saisissez directement la demande au format texte, comme "Je veux aller de Rennes à Biarritz".
+- **Audio** : Fournissez un fichier audio ou utilisez le microphone pour enregistrer une demande.
+
+Exemples de commandes :
+
+- Entrée de texte (modifiez `text_from_microphone` directement dans le code pour utiliser du texte en dur).
+- Utilisation du microphone pour capturer une phrase parlée.
+
+### Utilisation de l'API REST
+
+L'API est construite avec FastAPI et offre plusieurs endpoints pour interagir avec le modèle via des requêtes HTTP.
+
+1. **Démarrez le serveur API** :
+
+   ```bash
+   uvicorn api.app:app --reload
+   ```
+
+2. **Endpoints principaux** :
+
+   - `POST /api/audio-to-text` : Convertit un fichier audio en texte.
+     - **Paramètres** : Un fichier audio (`.wav`, `.mp3`).
+     - **Exemple** :
+
+       ```bash
+       curl -X POST "http://127.0.0.1:8000/api/audio-to-text" -F "file=@path/to/your/audiofile.wav"
+       ```
+
+   - `POST /api/validate-travel-intent` : Valide si la phrase est en français et contient une intention d'itinéraire.
+     - **Paramètres** : JSON avec une clé `sentence`.
+     - **Exemple** :
+
+       ```bash
+       curl -X POST "http://127.0.0.1:8000/api/validate-travel-intent" -H "Content-Type: application/json" -d '{"sentence": "Je veux aller de Rennes à Biarritz"}'
+       ```
+
+   - `POST /api/sncf/find-route` : Extrait les villes de départ et de destination et fournit l'itinéraire optimal.
+     - **Paramètres** : JSON avec une clé `sentence`.
+     - **Exemple** :
+
+       ```bash
+       curl -X POST "http://127.0.0.1:8000/api/sncf/find-route" -H "Content-Type: application/json" -d '{"sentence": "Je veux aller de Rennes à Biarritz"}'
+       ```
+
+### Fonctionnement du Traitement d'une Demande
+
+Exemple de traitement complet pour la phrase : "Je voudrais aller de Rennes à Biarritz".
+
+1. **Détection de Langue** : Vérifie que la phrase est en français (avec FastText).
+2. **Classification d'Intention** : Identifie l'intention de voyage (avec `TravelIntentClassifierModel` fine-tuné sur DistilBERT).
+3. **Extraction de Villes** : Extrait les villes de départ et d'arrivée, ici Rennes et Biarritz (avec `CamembertNERModel`).
+4. **Optimisation de l'Itinéraire** : Fournit le meilleur trajet via Dijkstra en utilisant les données SNCF, avec Bordeaux comme arrêt intermédiaire et une estimation de la durée totale du trajet.
+
+## Structure du Projet
+
+- **main.py** : Point d'entrée pour exécuter l'application depuis le terminal.
+- **api/app.py** : Définit les endpoints REST de l'API avec FastAPI.
+- **models/** : Contient les modèles NLP, y compris `TravelIntentClassifierModel` et `CamembertNERModel`.
+- **services/** : Implémente les services de traitement, notamment la reconnaissance vocale, la détection de langue, et l'optimisation d'itinéraire.
+- **datasets/** : Contient les jeux de données utilisés pour entraîner les modèles.
+- **assets/** : Contient les données additionnelles, comme les modèles de détection de langue FastText.
+- **logs/** : Contient les fichiers de log générés lors de l'entraînement.
+
+## Entraînement des Modèles
+
+Pour réentraîner les modèles, vérifiez que vous disposez des fichiers de jeu de données dans `datasets/`. Vous pouvez alors lancer l'entraînement en modifiant les scripts des modèles dans `models/` :
+
+- **Classification d'Intention** : `TravelIntentClassifierModel` entraîne un modèle DistilBERT pour classifier les intentions.
+- **Extraction de Villes** : `CamembertNERModel` entraîne un modèle CamemBERT pour la reconnaissance des villes de départ et d'arrivée.
+
+Chaque modèle est entraîné avec des paramètres spécifiques (taux d’apprentissage, nombre d’époques) pour garantir la précision.
+
+## Documentation
+Pour mieux comprendre le fonctionnement de l'application, vous pouvez consulter la documentation détaillée dans le dossier `documentation/`.
+
+
+## Contribuer
+
+Les contributions sont les bienvenues ! Pour contribuer :
+
+1. **Fork** le dépôt.
+2. **Clone** le dépôt forké localement.
+3. Créez une **branche** pour vos modifications (`git checkout -b feature/nom-de-fonctionnalité`).
+4. **Commit** vos modifications (`git commit -m 'Ajout d'une fonctionnalité'`).
+5. **Push** sur la branche (`git push origin feature/nom-de-fonctionnalité`).
+6. Ouvrez une **Pull Request** pour revue.
+
+## Licence
+
+Ce projet est sous licence MIT.
