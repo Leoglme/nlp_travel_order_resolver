@@ -1,18 +1,19 @@
 import os
 import nbformat as nbf
-import pandas as pd
 import numpy as np
 from transformers import CamembertTokenizerFast, CamembertForTokenClassification
 from tqdm.auto import tqdm
 import torch
 from datasets import load_dataset
 
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+
 # Paths
 notebook_dir = "evaluations/camembert_ner_evaluation"
 notebook_path = os.path.join(notebook_dir, "camembert_ner_evaluation.ipynb")
 executed_notebook_path = os.path.join(notebook_dir, "executed_notebook.ipynb")
 html_output_path = os.path.join(notebook_dir, "index.html")
-test_dataset_path = "../datasets/camembert_ner_dataset.csv"
+test_dataset_path = os.path.join(project_root, "datasets/camembert_ner_dataset.csv")
 model_path = "model_output/camembert_ner"
 
 # Delete existing files
@@ -64,7 +65,7 @@ n.cells.append(nbf.v4.new_code_cell(f"""
 from datasets import load_dataset
 
 # Load dataset
-dataset = load_dataset("csv", data_files={{"test": "{test_dataset_path}"}})["test"]
+dataset = load_dataset("csv", data_files={{"test": r"{test_dataset_path}"}})["test"]
 dataset.to_pandas().head()
 """))
 
@@ -72,6 +73,7 @@ dataset.to_pandas().head()
 n.cells.append(nbf.v4.new_markdown_cell("## Résultats des prédictions au niveau des tokens"))
 n.cells.append(nbf.v4.new_code_cell(f"""
 import pandas as pd
+import numpy as np
 
 # Display predictions
 results = {results}
