@@ -3,9 +3,7 @@
   <EpiNavbar />
    <div class="grid grid-cols-[240px,1fr]">
      <DocumentationSidebar />
-     <div class="px-8 py-6 h-[calc(100vh-125px)] overflow-y-auto">
-        <slot />
-     </div>
+     <slot />
    </div>
   </Body>
 </template>

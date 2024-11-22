@@ -14,9 +14,9 @@ class LanguageIdentification:
         self.model = fasttext.load_model(pretrained_lang_model)
 
     """
-    Predicts the language of the given text.
+        Predicts the language of the given text.
     """
-    def predict_lang(self, text):
+    def predict(self, text):
         if not isinstance(text, str):
             raise ValueError("The 'text' parameter must be a character string.")
 
@@ -24,10 +24,22 @@ class LanguageIdentification:
         lang, confidence = self.model.predict(text, k=1)
         confidence_value = confidence[0]
 
+        return lang, confidence, confidence_value
+
+    """
+    Predicts the language of the given text.
+    """
+    def predict_lang(self, text):
+        lang, confidence, confidence_value = self.predict(text)
+
         # Minimum trust check
         if confidence_value < self.min_confidence:
             raise ValueError(f"Insufficient confidence for language detection: {confidence_value * 100:.2f}%")
 
+        return lang, confidence
+
+    def predict_lang_for_evaluation(self, text):
+        lang, confidence, confidence_value = self.predict(text)
         return lang, confidence
 
     """

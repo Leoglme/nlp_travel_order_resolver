@@ -26,4 +26,4 @@ geopy
 aiohttp
 jupyter
 matplotlib
-sklearn
+scikit-learn

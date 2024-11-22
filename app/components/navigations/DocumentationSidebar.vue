@@ -1,25 +1,68 @@
 <template>
   <aside
       class="block h-screen max-h-screen pt-5 pb-3 px-3 overflow-scroll bg-white z-20">
-    <div class="absolute inset-0 flex items-center justify-end w-full h-full">
-      <div class="fixed top-[10px] w-px h-full bg-neutral-200"></div>
-    </div>
-    <h4 class="relative px-2 py-1 mb-2 text-sm font-semibold rounded-md">Getting Started</h4>
-    <div class="relative grid grid-flow-row text-sm mb-7 auto-rows-max">
-      <a href="/pines/docs/introduction"
-         :class="{ 'bg-gray-100 border-gray-200/60' : activeMenuItem == 'introduction', 'hover:underline border-transparent' : activeMenuItem != 'introduction' }"
-         class="group flex w-full items-center rounded-md border px-2 py-1.5 hover:underline border-transparent">
-        Introduction
-      </a>
-      <a href="/pines/docs/how-to-use" :class="{ 'bg-gray-100 border-gray-200/60' : activeMenuItem == 'how-to-use', 'hover:underline border-transparent' : activeMenuItem != 'how-to-use' }"
-         class="group flex w-full items-center rounded-md border px-2 py-1.5 hover:underline border-transparent">
-        How to Use
-      </a>
+    <div
+      v-for="(items, menuName) in menuItems"
+      :key="menuName"
+    >
+      <h4 class="relative px-2 py-1 mb-2 text-sm font-semibold rounded-md">
+        {{ menuName }}
+      </h4>
+      <div class="relative grid grid-flow-row text-sm mb-7 auto-rows-max">
+
+        <NuxtLink
+          v-for="item in items"
+          :key="item.name"
+          :to="item.url"
+          :class="{ 'bg-gray-100 border-gray-200/60' : activeMenuItem.url == item.url, 'hover:underline border-transparent' : activeMenuItem.url != item.url }"
+          class="group flex w-full items-center rounded-md border px-2 py-1.5 hover:underline border-transparent"
+        >
+          {{ item.name }}
+        </NuxtLink>
+      </div>
     </div>
   </aside>
 </template>
 
 
 <script lang="ts" setup>
-const activeMenuItem = ref('introduction')
+import type {Ref} from "vue";
+
+type MenuItem = {
+  name: string
+  url: string
+}
+
+type MenuItems = {
+  [key: string]: MenuItem[]
+}
+
+/* HOOKS */
+const route = useRoute()
+
+/* REFS */
+const menuItems: MenuItems = {
+  'Presentation': [
+    { name: 'Introduction', url: '/documentation' },
+  ],
+  'Notebooks': [
+    { name: 'TravelIntentClassifier', url: '/documentation/notebooks/travel-intent-classifier' },
+    { name: 'LanguageIdentification', url: '/documentation/notebooks/language_identification_evaluation' },
+  ],
+  'Documentation': [
+    { name: 'Schema Architecture', url: '/documentation/architecture-schema' },
+    { name: 'Exemple de traitement', url: '/documentation/example-processing' },
+    { name: 'Entrainement des modèles', url: '/documentation/model-training' },
+  ]
+}
+
+const activeMenuItem: Ref<MenuItem> = ref(Object.values(menuItems).flat().find((item) => item.url === route.path) || menuItems['Presentation'][0])
+
+// Watch the route to update the active menu item
+watch(() => route.path, (path: string) => {
+  const menuItem: MenuItem | undefined = Object.values(menuItems).flat().find((item) => item.url === path)
+  if (menuItem) {
+    activeMenuItem.value = menuItem
+  }
+})
 </script>

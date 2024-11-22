@@ -1,3 +1,9 @@
+import os
+import sys
+
+# Add the project root directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from models.travel_intent_classifier_model import TravelIntentClassifierModel
 
 # Liste des textes et des prédictions attendues (True = trajet, False = pas de trajet)
@@ -40,7 +46,7 @@ texts = [
     ("Peut-on partir de Paris pour arriver à Marseille en moins de trois heures ?", True),
     ("Si je partais demain, est-ce que je pourrais rejoindre Lyon sans escale ?", True),
     ("Pourrais-je aller de Bordeaux à Toulouse en bus ?", True),
-    ("Est-ce que tu as déjà pensé à aller de Marseille à Nice en vélo ?", True)
+    ("Est-ce que tu as déjà pensé à aller de Marseille à Nice en vélo ?", True),
 ]
 
 # Initialiser le modèle

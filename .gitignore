@@ -2,3 +2,29 @@
 model_output
 logs
 assets/models/**
+
+
+# Nuxt dev/build outputs
+app/.output
+app/.data
+app/.nuxt
+app/.nitro
+app/.cache
+app/dist
+
+# Node dependencies
+app/node_modules
+
+# Logs
+app/logs
+app/*.log
+
+# Misc
+app/.DS_Store
+app/.fleet
+app/.idea
+
+# Local env files
+app/.env
+app/.env.*
+app/!.env.example

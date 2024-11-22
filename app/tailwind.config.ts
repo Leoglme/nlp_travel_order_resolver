@@ -1,5 +1,5 @@
 module.exports = {
-    plugins: [require('tailwindcss-debug-screens')],
+    plugins: [require('tailwindcss-debug-screens'), require('@tailwindcss/typography')],
     content: [
         './components/**/*.{js,vue,ts}',
         './layouts/**/*.vue',

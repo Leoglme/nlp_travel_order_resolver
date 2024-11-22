@@ -11,8 +11,8 @@ export default class BaseApiService {
         })
     }
 
-    protected static async get<T>(url: string): Promise<T> {
-        const response = await this.client().get(url)
+    protected static async get<T>(url: string, config?: object): Promise<T> {
+        const response = await this.client().get(url, config)
         return response.data as T
     }
 

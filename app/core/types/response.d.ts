@@ -1,5 +1,5 @@
 type ErrorResponse = {
-    detail: string
+    error: string
 }
 
 export { ErrorResponse }

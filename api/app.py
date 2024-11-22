@@ -5,6 +5,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from starlette.responses import PlainTextResponse
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -13,7 +14,7 @@ from models.camembert_ner_model import CamembertNERModel
 from models.travel_intent_classifier_model import TravelIntentClassifierModel
 from services.sncf.sncf_route_finder import SNCFRouteFinder
 from services.voice_to_text_converter import VoiceToTextConverter
-from services.language_detection import LanguageIdentification
+from services.language_identifications import LanguageIdentification
 
 app = FastAPI()
 app.add_middleware(
@@ -49,7 +50,6 @@ class RoutePoint(BaseModel):
     longitude: float
     travel_time: int
     stop_name: str
-
 
 
 class RouteResponse(BaseModel):
@@ -151,6 +151,7 @@ async def find_route_sncf(request: SentenceRequest):
         total_travel_time=int(route_data["total_travel_time"])
     )
 
+
 # 5. Route to serve the travel intent classifier evaluation report (HTML)
 @app.get("/api/travel_intent_classifier_evaluation/index.html")
 def travel_intent_classifier_evaluation_html():
@@ -160,5 +161,52 @@ def travel_intent_classifier_evaluation_html():
     return {"error": "File not found"}
 
 
+# 6. Route to serve the language identification evaluation report (HTML)
+@app.get("/api/language_identification_evaluation/index.html")
+def language_identification_evaluation_html():
+    file_path = "evaluations/language_identification_evaluation/index.html"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"error": "File not found"}
 
 
+# 7. Route to serve the README.md file as plain text
+@app.get("/api/project_introduction_markdown")
+def project_introduction_markdown():
+    file_path = "README.md"
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+        return PlainTextResponse(content, media_type="text/plain")
+    return {"error": "File not found"}
+
+
+# 8. Route to serve the documentation/Exemple_Processing.md file as plain text
+@app.get("/api/exemple_processing_markdown")
+def exemple_processing_markdown():
+    file_path = "documentation/Exemple_Processing.md"
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+        return PlainTextResponse(content, media_type="text/plain")
+    return {"error": "File not found"}
+
+
+# 9. Route to serve the documentation/Processus_Training.md file as plain text
+@app.get("/api/processus_training_markdown")
+def processus_training_markdown():
+    file_path = "documentation/Processus_Training.md"
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+        return PlainTextResponse(content, media_type="text/plain")
+    return {"error": "File not found"}
+
+
+# 10. Route to serve the documentation/architecture-schema.pdf file as a downloadable file
+@app.get("/api/architecture_schema_pdf")
+def architecture_schema_pdf():
+    file_path = "documentation/architecture-schema.pdf"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="application/pdf", filename="architecture-schema.pdf")
+    return {"error": "File not found"}
