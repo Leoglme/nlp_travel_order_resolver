@@ -68,7 +68,8 @@ import EpiInput from "~/components/inputs/EpiInput.vue";
 import EpiVoiceRecordButton from "~/components/buttons/EpiVoiceRecordButton.vue";
 import TravelOrderResolverService from "~/core/services/TravelOrderResolverService";
 import type {
-  ValidateTravelIntentResponse
+  ValidateTravelIntentResponse,
+  AudioToTextResponse,
 } from "~/core/services/TravelOrderResolverService";
 import type { ErrorResponse } from '~/core/types/response'
 import NotyfService from "~/lib/services/NotyfService";
@@ -97,13 +98,9 @@ const validateSentenceAndRedirectToMap = async () => {
   const notyfService = new NotyfService()
 
 
-  if('detail' in validateTravelIntentResponse) {
-    return notyfService.error(validateTravelIntentResponse.detail)
+  if('error' in validateTravelIntentResponse) {
+    return notyfService.error(validateTravelIntentResponse.error)
   }
-
-  console.log({
-    validateTravelIntentResponse
-  })
 
 
   if (!validateTravelIntentResponse.is_trip_related) {
@@ -132,28 +129,26 @@ const voiceStopRecording = () => {
 }
 
 /* Handle the audio when it's ready */
-const handleAudio = async (audioUrl: string) => {
-  console.log('Audio URL: ', audioUrl)
-
-  // Convert the audioUrl into a Blob and send it to the API
-  const response = await fetch(audioUrl)
-  const audioBlob = await response.blob()
-  const file = new File([audioBlob], "audio.wav", { type: "audio/wav" })
-
+const handleAudio = async (audioBlob: Blob) => {
   // Call the API to convert the audio to text
-  const audioTextResponse: { sentence: string } | ErrorResponse = await TravelOrderResolverService.audioToText(file)
+  const audioTextResponse: AudioToTextResponse | ErrorResponse = await TravelOrderResolverService.audioToText(audioBlob)
+  const notyfService = new NotyfService()
 
-  if ('detail' in audioTextResponse) {
-    console.error('Error while converting audio to text:', audioTextResponse.detail)
-    const notyfService = new NotyfService()
-    notyfService.error(audioTextResponse.detail)
-    return
+  if('error' in audioTextResponse) {
+    console.error('Error while converting audio to text:', audioTextResponse.error)
+    return notyfService.error(audioTextResponse.error)
   }
 
-  // Update the sentence with the transcribed text
-  sentence.value = audioTextResponse.sentence
-  dismissValidateSentenceError()
-  console.log("Transcribed text: ", audioTextResponse.sentence)
+  if(!audioTextResponse.is_recognition_service_available) {
+    validateSentenceErrorMessage.value = "Le service de reconnaissance vocale n'est pas disponible pour le moment. Veuillez réessayer plus tard."
+  } else if (!audioTextResponse.is_audio_comprehensible) {
+    validateSentenceErrorMessage.value = "L'audio n'a pas pu être compris. Veuillez réessayer."
+  } else {
+    // Update the sentence with the transcribed text
+    sentence.value = audioTextResponse.sentence
+    dismissValidateSentenceError()
+    console.log("Transcribed text: ", audioTextResponse.sentence)
+  }
 }
 
 /* LIFECYCLE */

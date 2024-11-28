@@ -46,8 +46,9 @@ const menuItems: MenuItems = {
     { name: 'Introduction', url: '/documentation' },
   ],
   'Notebooks': [
-    { name: 'TravelIntentClassifier', url: '/documentation/notebooks/travel-intent-classifier' },
     { name: 'LanguageIdentification', url: '/documentation/notebooks/language_identification_evaluation' },
+    { name: 'TravelIntentClassifier', url: '/documentation/notebooks/travel-intent-classifier' },
+    { name: 'CamembertNERModel', url: '/documentation/notebooks/camembert_ner_evaluation' },
   ],
   'Documentation': [
     { name: 'Schema Architecture', url: '/documentation/architecture-schema' },

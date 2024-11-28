@@ -41,6 +41,19 @@ export default class DocumentationService extends BaseApiService {
     }
 
     /**
+     * Fetches the HTML evaluation report for the departure and arrival extraction.
+     * @returns {Promise<HtmlDocumentationResponse | ErrorResponse>}
+     * A promise resolved with the HTML report as a string, or an error response.
+     */
+    static async getCamembertNERModelEvaluation(): Promise<HtmlDocumentationResponse | ErrorResponse> {
+        try {
+            return await this.get<HtmlDocumentationResponse>('/api/camembert_ner_evaluation/index.html');
+        } catch (error) {
+            return {error: 'Unable to fetch the evaluation report.'} as unknown as ErrorResponse;
+        }
+    }
+
+    /**
      * Fetches the Markdown introduction of the project from the API.
      * @returns {Promise<MarkdownDocumentationResponse | ErrorResponse>} A promise resolved with the Markdown content as a string, or an error response.
      */

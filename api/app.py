@@ -9,12 +9,12 @@ from starlette.responses import PlainTextResponse
 
 # Add the project root directory to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from api.services.audio_service import AudioService
 from models.camembert_ner_model import CamembertNERModel
 from models.travel_intent_classifier_model import TravelIntentClassifierModel
 from services.sncf.sncf_route_finder import SNCFRouteFinder
-from services.voice_to_text_converter import VoiceToTextConverter
-from services.language_identifications import LanguageIdentification
+from services.voice_to_text_converter import VoiceToTextConverter, VoiceToTextError
+from services.language_identifications import LanguageIdentification, InsufficientConfidenceError
+import tempfile
 
 app = FastAPI()
 app.add_middleware(
@@ -31,6 +31,12 @@ logger = logging.getLogger(__name__)
 class SentenceRequest(BaseModel):
     sentence: str
 
+class AudioToTextResponse(BaseModel):
+    is_audio_comprehensible: bool
+    is_recognition_service_available: bool
+    message: str
+    sentence: str
+
 
 class AudioRequest(BaseModel):
     file: UploadFile
@@ -41,6 +47,8 @@ class ValidationResponse(BaseModel):
     is_trip_related: bool
     is_correct_language: bool
     reason: str
+
+
 
 
 class RoutePoint(BaseModel):
@@ -60,26 +68,45 @@ class RouteResponse(BaseModel):
 
 
 # 2. Route to convert audio file to text
-@app.post("/api/audio-to-text", response_model=SentenceRequest)
+@app.post("/api/audio-to-text", response_model=AudioToTextResponse)
 async def audio_to_text_route(file: UploadFile = File(...)):
     logger.info(f"Processing file: {file.filename}")
     if not file.content_type.startswith("audio/"):
         raise HTTPException(status_code=400, detail="Invalid file type. Please upload an audio file.")
 
-    if file.size > 10 * 1024 * 1024:  # 10 MB
-        raise HTTPException(status_code=400, detail="File size exceeds 10MB.")
-
+    temp_wav_path = os.path.join(tempfile.gettempdir(), f"{file.filename}.wav")
     try:
-        # Convert to WAV using AudioService
-        wav_file = AudioService.convert_to_wav(file.file)
+        # Write the temporary WAV file
+        with open(temp_wav_path, "wb") as temp_file:
+            temp_file.write(file.file.read())
 
+        # Convert audio to text
         voice_to_text_converter = VoiceToTextConverter()
-        text_from_audio = voice_to_text_converter.convert_from_audio_file(wav_file)
+        text_from_audio = voice_to_text_converter.convert_from_audio_file(temp_wav_path)
+
         logger.info(f"Converted audio to text: {text_from_audio}")
-        return {"sentence": text_from_audio}
+        return AudioToTextResponse(
+            is_audio_comprehensible=True,
+            is_recognition_service_available=True,
+            message="Audio successfully converted to text.",
+            sentence=text_from_audio
+        )
+    except VoiceToTextError as e:
+        logger.error(f"VoiceToTextError: {e}")
+        return AudioToTextResponse(
+            is_audio_comprehensible=e.is_audio_comprehensible,
+            is_recognition_service_available=e.is_recognition_service_available,
+            message=str(e),
+            sentence="",
+        )
     except Exception as e:
-        logger.error(f"Error processing audio file: {e}")
-        raise HTTPException(status_code=500, detail="Audio processing failed: {}".format(str(e)))
+        logger.error(f"Unexpected error processing audio file: {e}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    finally:
+        if os.path.exists(temp_wav_path):
+            os.remove(temp_wav_path)
+
+
 
 
 # 3. Route to validate the text (check French and travel intention)
@@ -87,27 +114,38 @@ async def audio_to_text_route(file: UploadFile = File(...)):
 async def validate_travel_intent(request: SentenceRequest):
     logger.info(f"Validating sentence: {request.sentence}")
     lang_identifier = LanguageIdentification()
-    lang, confidence = lang_identifier.stat_print(request.sentence)
 
-    is_correct_language = lang[0] == "__label__fr"
+    try:
+        lang, confidence = lang_identifier.predict_lang(request.sentence)
 
-    trip_intent_classifier_model = TravelIntentClassifierModel()
-    is_trip_related = trip_intent_classifier_model.predict(request.sentence) == 1
+        is_correct_language = lang[0] == "__label__fr"
 
-    if not is_correct_language:
-        logger.info(f"Non-French text detected, language is {lang[0]} with confidence {confidence} %")
-        return ValidationResponse(is_valid=False, reason="Non-French text detected.", is_correct_language=False,
-                                  is_trip_related=is_trip_related)
+        trip_intent_classifier_model = TravelIntentClassifierModel()
+        is_trip_related = trip_intent_classifier_model.predict(request.sentence) == 1
 
-    if not is_trip_related:
-        logger.info(f"Non-trip-related sentence detected: {request.sentence}")
-        return ValidationResponse(is_valid=False, reason="Non-trip-related sentence detected.",
-                                  is_correct_language=True,
-                                  is_trip_related=False)
+        if not is_correct_language:
+            logger.info(f"Non-French text detected, language is {lang[0]} with confidence {confidence} %")
+            return ValidationResponse(is_valid=False, reason="Non-French text detected.", is_correct_language=False,
+                                      is_trip_related=is_trip_related)
 
-    logger.info(f"Trip-related sentence detected: {request.sentence}")
-    return ValidationResponse(is_valid=True, reason="Trip-related sentence detected.", is_correct_language=True,
-                              is_trip_related=True)
+        if not is_trip_related:
+            logger.info(f"Non-trip-related sentence detected: {request.sentence}")
+            return ValidationResponse(is_valid=False, reason="Non-trip-related sentence detected.",
+                                      is_correct_language=True,
+                                      is_trip_related=False)
+
+        logger.info(f"Trip-related sentence detected: {request.sentence}")
+        return ValidationResponse(is_valid=True, reason="Trip-related sentence detected.", is_correct_language=True,
+                                  is_trip_related=True)
+
+    except InsufficientConfidenceError as e:
+        logger.info(f"Insufficient confidence for language detection: {e.confidence * 100:.2f}%")
+        return ValidationResponse(
+            is_valid=False,
+            reason=f"Insufficient confidence for language detection: {e.confidence * 100:.2f}%",
+            is_correct_language=False,
+            is_trip_related=False
+        )
 
 
 # 4. Route to extract cities and find the SNCF route
@@ -169,8 +207,16 @@ def language_identification_evaluation_html():
         return FileResponse(file_path, media_type="text/html")
     return {"error": "File not found"}
 
+# 7. Route to serve the departure and destination extraction evaluation report (HTML)
+@app.get("/api/camembert_ner_evaluation/index.html")
+def camembert_ner_evaluation_html():
+    file_path = "evaluations/camembert_ner_evaluation/index.html"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"error": "File not found"}
 
-# 7. Route to serve the README.md file as plain text
+
+# 8. Route to serve the README.md file as plain text
 @app.get("/api/project_introduction_markdown")
 def project_introduction_markdown():
     file_path = "README.md"
@@ -181,7 +227,7 @@ def project_introduction_markdown():
     return {"error": "File not found"}
 
 
-# 8. Route to serve the documentation/Exemple_Processing.md file as plain text
+# 9. Route to serve the documentation/Exemple_Processing.md file as plain text
 @app.get("/api/exemple_processing_markdown")
 def exemple_processing_markdown():
     file_path = "documentation/Exemple_Processing.md"
@@ -192,7 +238,7 @@ def exemple_processing_markdown():
     return {"error": "File not found"}
 
 
-# 9. Route to serve the documentation/Processus_Training.md file as plain text
+# 10. Route to serve the documentation/Processus_Training.md file as plain text
 @app.get("/api/processus_training_markdown")
 def processus_training_markdown():
     file_path = "documentation/Processus_Training.md"
@@ -203,7 +249,7 @@ def processus_training_markdown():
     return {"error": "File not found"}
 
 
-# 10. Route to serve the documentation/architecture-schema.pdf file as a downloadable file
+# 11. Route to serve the documentation/architecture-schema.pdf file as a downloadable file
 @app.get("/api/architecture_schema_pdf")
 def architecture_schema_pdf():
     file_path = "documentation/architecture-schema.pdf"

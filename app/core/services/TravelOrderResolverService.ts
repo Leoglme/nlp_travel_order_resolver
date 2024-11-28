@@ -8,6 +8,13 @@ export type ValidateTravelIntentResponse = {
     is_correct_language: boolean
 }
 
+export type AudioToTextResponse = {
+    is_audio_comprehensible: boolean
+    is_recognition_service_available: boolean
+    message: string
+    sentence: string
+}
+
 export type RoutePoint = {
     id: string
     name: string
@@ -30,9 +37,9 @@ export default class TravelOrderResolverService extends BaseApiService {
     /**
      * Sends a request to convert audio to text.
      * @param {File} file The audio file to be converted.
-     * @returns {Promise<{ sentence: string | ErrorResponse}>} A promise resolved with the text or throws an error.
+     * @returns {Promise<AudioToTextResponse | ErrorResponse} A promise resolved with the text or throws an error.
      */
-    static async audioToText(file: File): Promise<{ sentence: string } | ErrorResponse> {
+    static async audioToText(file: File): Promise<AudioToTextResponse | ErrorResponse> {
         const formData = new FormData()
         formData.append('file', file)
 

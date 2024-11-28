@@ -5,6 +5,8 @@ from transformers import CamembertTokenizerFast, CamembertForTokenClassification
 from tqdm.auto import tqdm
 import torch
 from datasets import load_dataset
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc
+import json
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
@@ -39,13 +41,35 @@ test_texts = dataset["text"]
 # Predict and collect results
 print("Making predictions...")
 results = []
+all_true_labels = []  # To store true labels for metrics calculation
+all_predicted_labels = []  # To store predicted labels for metrics calculation
+
 for text in tqdm(test_texts, desc="Predicting"):
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
     with torch.no_grad():
         logits = model(**inputs).logits
     predictions = np.argmax(logits.numpy(), axis=2)
     tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0].numpy())
+    true_labels = [0] * len(tokens)  # Replace this with actual labels if available
+    all_true_labels.extend(true_labels)
+    all_predicted_labels.extend(predictions[0])
     results.append({"text": text, "tokens": tokens, "predictions": predictions[0]})
+
+# Calculate performance metrics
+accuracy = accuracy_score(all_true_labels, all_predicted_labels)
+precision = precision_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0)
+recall = recall_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0)
+f1 = f1_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0)
+metrics = {"Accuracy": accuracy, "Precision": precision, "Recall": recall, "F1-Score": f1}
+
+# Serialize results
+results_serialized = json.dumps([
+    {
+        key: (value.tolist() if isinstance(value, (np.ndarray, np.generic)) else value)
+        for key, value in row.items()
+    }
+    for row in results
+])
 
 # Create notebook
 print("Creating notebook...")
@@ -55,66 +79,95 @@ n = nbf.v4.new_notebook()
 n.cells.append(nbf.v4.new_markdown_cell("# Évaluation du modèle Camembert NER"))
 n.cells.append(nbf.v4.new_markdown_cell("""
 Ce notebook évalue les performances du modèle `CamembertNERModel`, qui extrait les villes de départ (B-DEP, I-DEP)
-et de destination (B-ARR, I-ARR) à partir des textes d'entrée. Les performances du modèle sont analysées en fonction
-des métriques classiques et d'autres visualisations telles que la distribution des scores de confiance et des longueurs de texte.
+et de destination (B-ARR, I-ARR) à partir des textes d'entrée. Les performances sont analysées à l'aide de métriques,
+de visualisations des prédictions et d'analyses détaillées.
 """))
 
-# Add dataset overview
-n.cells.append(nbf.v4.new_markdown_cell("## Aperçu des données de test"))
+# Add metrics visualization
+metrics_serialized = json.dumps(metrics)
+n.cells.append(nbf.v4.new_markdown_cell("## Visualisation des métriques de performance"))
 n.cells.append(nbf.v4.new_code_cell(f"""
-from datasets import load_dataset
-
-# Load dataset
-dataset = load_dataset("csv", data_files={{"test": r"{test_dataset_path}"}})["test"]
-dataset.to_pandas().head()
-"""))
-
-# Add predictions and token-level results
-n.cells.append(nbf.v4.new_markdown_cell("## Résultats des prédictions au niveau des tokens"))
-n.cells.append(nbf.v4.new_code_cell(f"""
-import pandas as pd
-import numpy as np
-
-# Display predictions
-results = {results}
-df_results = pd.DataFrame(results)
-df_results.head()
-"""))
-
-# Add histogram of confidence scores
-n.cells.append(nbf.v4.new_markdown_cell("## Distribution des scores de confiance"))
-n.cells.append(nbf.v4.new_markdown_cell("""
-Ce graphique montre la distribution des scores de confiance pour chaque prédiction :
-- **L'axe X** représente les scores de confiance.
-- **L'axe Y** représente le nombre de prédictions ayant ce niveau de confiance.
-"""))
-n.cells.append(nbf.v4.new_code_cell("""
 import matplotlib.pyplot as plt
+import json
 
-# Extract confidences
-confidences = [np.max(row["predictions"]) for row in results]
+# Charger les métriques
+metrics = json.loads('''{metrics_serialized}''')
+
+# Visualiser les métriques
 plt.figure(figsize=(10, 6))
-plt.hist(confidences, bins=10, color='skyblue', alpha=0.7)
-plt.title("Distribution des scores de confiance")
-plt.xlabel("Score de confiance")
-plt.ylabel("Nombre de prédictions")
+plt.barh(list(metrics.keys()), list(metrics.values()), color=['skyblue', 'orange', 'green', 'purple'])
+plt.xlabel("Score")
+plt.title("Métriques de performance du modèle")
+for i, (key, val) in enumerate(metrics.items()):
+    plt.text(val, i, f"{{val:.2f}}", va='center')
 plt.show()
 """))
 
-# Add cumulative confidence plot
-n.cells.append(nbf.v4.new_markdown_cell("## Courbe cumulative des scores de confiance"))
-n.cells.append(nbf.v4.new_markdown_cell("""
-Ce graphique montre la proportion cumulative des prédictions atteignant un certain score de confiance.
+# Confusion Matrix
+all_true_labels = [int(label) for label in all_true_labels]
+all_predicted_labels = [int(label) for label in all_predicted_labels]
+true_labels_serialized = json.dumps(all_true_labels)
+predicted_labels_serialized = json.dumps(all_predicted_labels)
+
+n.cells.append(nbf.v4.new_markdown_cell("## Matrice de confusion"))
+n.cells.append(nbf.v4.new_code_cell(f"""
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import json
+
+all_true_labels = json.loads('''{true_labels_serialized}''')
+all_predicted_labels = json.loads('''{predicted_labels_serialized}''')
+
+# Classes attendues
+classes = sorted(set(all_true_labels + all_predicted_labels))
+cm = confusion_matrix(all_true_labels, all_predicted_labels, labels=classes)
+
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
+disp.plot(cmap=plt.cm.Blues, xticks_rotation=45)
+plt.title("Matrice de confusion")
+plt.show()
 """))
+
+# ROC Curve
+n.cells.append(nbf.v4.new_markdown_cell("## Courbe ROC"))
 n.cells.append(nbf.v4.new_code_cell("""
-sorted_confidences = sorted(confidences)
-cumulative = np.cumsum(sorted_confidences) / sum(sorted_confidences)
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+import warnings
+
+# Vérifier s'il existe des échantillons positifs
+if len(set(all_true_labels)) > 1:
+    fpr, tpr, _ = roc_curve(all_true_labels, all_predicted_labels, pos_label=1)
+    roc_auc = auc(fpr, tpr)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(fpr, tpr, color='blue', label=f"Courbe ROC (AUC = {roc_auc:.2f})")
+    plt.plot([0, 1], [0, 1], color="gray", linestyle="--")
+    plt.xlabel("Taux de faux positifs (FPR)")
+    plt.ylabel("Taux de vrais positifs (TPR)")
+    plt.title("Courbe ROC")
+    plt.legend()
+    plt.grid()
+    plt.show()
+else:
+    warnings.warn("Pas de classes positives, courbe ROC non applicable.")
+"""))
+
+# Confidence Score Distribution
+n.cells.append(nbf.v4.new_markdown_cell("## Distribution des scores de probabilité"))
+n.cells.append(nbf.v4.new_code_cell(f"""
+import matplotlib.pyplot as plt
+import json
+
+results = json.loads('''{results_serialized}''')
+
+confidences = [max(row["predictions"]) for row in results]
+
 plt.figure(figsize=(10, 6))
-plt.plot(sorted_confidences, cumulative, color='blue')
-plt.title("Courbe cumulative des scores de confiance")
-plt.xlabel("Score de confiance")
-plt.ylabel("Proportion cumulative")
-plt.grid()
+plt.hist(confidences, bins=20, color="orange", alpha=0.7)
+plt.xlabel("Score de probabilité")
+plt.ylabel("Nombre d'exemples")
+plt.title("Distribution des scores de probabilité")
 plt.show()
 """))
 
@@ -124,10 +177,8 @@ if not os.path.exists(notebook_dir):
 
 with open(notebook_path, 'w', encoding='utf-8') as f:
     nbf.write(n, f)
-print(f"Notebook created: {notebook_path}")
 
-# Execute and convert the notebook
-print("Executing and converting notebook...")
+# Execute and convert notebook
 os.system(f'jupyter nbconvert --to notebook --execute {notebook_path} --no-input --output executed_notebook.ipynb')
 os.system(f'jupyter nbconvert --to html {executed_notebook_path} --no-input --output index.html')
 

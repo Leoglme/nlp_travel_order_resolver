@@ -2,6 +2,12 @@ import fasttext
 import os
 import sys
 
+class InsufficientConfidenceError(Exception):
+    """Exception levée lorsque la confiance est insuffisante pour détecter la langue."""
+    def __init__(self, confidence):
+        self.confidence = confidence
+        super().__init__(f"Insufficient confidence for language detection: {confidence * 100:.2f}%")
+
 
 class LanguageIdentification:
     min_confidence = 0.70
@@ -14,7 +20,7 @@ class LanguageIdentification:
         self.model = fasttext.load_model(pretrained_lang_model)
 
     """
-        Predicts the language of the given text.
+    Predicts the language of the given text.
     """
     def predict(self, text):
         if not isinstance(text, str):
@@ -34,9 +40,13 @@ class LanguageIdentification:
 
         # Minimum trust check
         if confidence_value < self.min_confidence:
-            raise ValueError(f"Insufficient confidence for language detection: {confidence_value * 100:.2f}%")
+            raise InsufficientConfidenceError(confidence_value)
 
         return lang, confidence
+
+    """
+    Predicts the language of the given text for evaluation purposes.
+    """
 
     def predict_lang_for_evaluation(self, text):
         lang, confidence, confidence_value = self.predict(text)

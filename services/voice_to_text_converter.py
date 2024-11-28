@@ -5,15 +5,22 @@ import logging
 # Configuration du logger
 logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
 
+class VoiceToTextError(Exception):
+    """Custom exception for voice to text conversion errors."""
+    def __init__(self, message, is_audio_comprehensible, is_recognition_service_available):
+        super().__init__(message)
+        self.is_audio_comprehensible = is_audio_comprehensible
+        self.is_recognition_service_available = is_recognition_service_available
+
 
 class VoiceToTextConverter:
-    def __init__(self, language="fr-FR", energy_threshold=300, pause_threshold=0.8):
+    def __init__(self, language="fr-FR", energy_threshold=200, pause_threshold=0.8):
         """
-        Initialise le convertisseur de voix en texte avec des paramètres ajustables.
+        Initializes the voice to text converter with adjustable parameters.
 
-        :param language: Langue pour la reconnaissance vocale (par défaut, "fr-FR" pour le français).
-        :param energy_threshold: Seuil d'énergie pour la détection du bruit (plus bas = plus sensible).
-        :param pause_threshold: Temps d'attente de silence avant d'arrêter l'écoute (en secondes).
+        :param language: Language for voice recognition (default, "fr-FR" for French).
+        :param energy_threshold: Energy threshold for noise detection (lower = more sensitive).
+        :param pause_threshold: Time to wait for silence before stopping listening (in seconds).
         """
         self.recognizer = sr.Recognizer()
         self.language = language
@@ -26,26 +33,34 @@ class VoiceToTextConverter:
                 audio = self.recognizer.record(source)
             return self.recognizer.recognize_google(audio, language=self.language)
         except sr.UnknownValueError:
-            logging.error("Erreur : la reconnaissance vocale n'a pas pu comprendre l'audio.")
-            sys.exit(1)
+            logging.error("Error: Speech recognition was unable to understand the audio.")
+            raise VoiceToTextError(
+                "The speech recognition could not understand the audio.",
+                is_audio_comprehensible=False,
+                is_recognition_service_available=True,
+            )
         except sr.RequestError:
-            logging.error("Erreur : échec de la requête au service de reconnaissance vocale.")
-            sys.exit(1)
+            logging.error("Error: Request to speech recognition service failed.")
+            raise VoiceToTextError(
+                "Failed to connect to the speech recognition service.",
+                is_audio_comprehensible=False,
+                is_recognition_service_available=False,
+            )
 
     def convert_from_microphone(self):
         """
-        Convertit la voix captée par le microphone en texte.
+        Converts the voice picked up by the microphone into text.
 
-        :return: Le texte transcrit ou une erreur en cas d'échec.
+        :return: The transcribed text or an error on failure.
         """
         try:
             with sr.Microphone() as source:
                 # Ajuste automatiquement le seuil de bruit pour l'ambiance actuelle
-                print("Calibrage du bruit ambiant...")
+                print("Ambient noise calibration...")
                 self.recognizer.adjust_for_ambient_noise(source, duration=1)
-                print(f"Seuil d'énergie ajusté : {self.recognizer.energy_threshold}")
+                print(f"Adjusted energy threshold: {self.recognizer.energy_threshold}")
 
-                print("Parlez maintenant...")
+                print("Speak Now...")
 
                 # Écoute sans timeout et attend que tu parles
                 audio = self.recognizer.listen(source)
@@ -53,8 +68,8 @@ class VoiceToTextConverter:
             # Reconnaissance vocale avec Google
             return self.recognizer.recognize_google(audio, language=self.language)
         except sr.UnknownValueError:
-            logging.error("Erreur : la reconnaissance vocale n'a pas pu comprendre l'audio.")
+            logging.error("Error: Speech recognition was unable to understand the audio.")
             sys.exit(1)
         except sr.RequestError:
-            logging.error("Erreur : échec de la requête au service de reconnaissance vocale.")
+            logging.error("Error: Request to speech recognition service failed.")
             sys.exit(1)

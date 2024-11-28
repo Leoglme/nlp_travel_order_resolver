@@ -15,6 +15,7 @@
   "dependencies": {
     "@pinia/nuxt": "^0.5.5",
     "@tailwindcss/typography": "^0.5.15",
+    "@types/recorder-js": "^1.0.4",
     "@vee-validate/rules": "^4.13.2",
     "axios": "^1.7.7",
     "leaflet": "^1.9.4",
@@ -23,6 +24,7 @@
     "notyf": "^3.10.0",
     "nuxt": "^3.13.0",
     "pinia": "^2.2.4",
+    "recorder-js": "^1.0.7",
     "vee-validate": "^4.13.2",
     "vue": "latest",
     "vue-router": "latest",
