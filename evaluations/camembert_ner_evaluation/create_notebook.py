@@ -1,17 +1,24 @@
 # Import necessary libraries
+# https://chatgpt.com/c/67499e38-a340-8012-8604-b28071c42e41
 import os
+import sys
 import json
 import numpy as np
 from tqdm.auto import tqdm
 import torch
 from transformers import CamembertTokenizerFast, CamembertForTokenClassification
 from datasets import load_dataset
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay, classification_report
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report
 import nbformat as nbf
-import matplotlib.pyplot as plt
 import asyncio
 
+# Add the project root directory to the Python path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+from models.camembert_ner_model import CamembertNERModel
+
 # Fix asyncio issue on Windows
+
 if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -45,39 +52,10 @@ if not os.path.exists(test_dataset_path):
     raise FileNotFoundError(f"Dataset file not found: {test_dataset_path}")
 
 dataset = load_dataset("csv", data_files={"test": test_dataset_path})["test"]
-
-def tokenize_and_align_labels(examples):
-    tokenized_inputs = tokenizer(examples["text"], padding="max_length", truncation=True, is_split_into_words=False)
-    labels = []
-    for i, (text, departure, destination) in enumerate(zip(examples["text"], examples["departure"], examples["destination"])):
-        word_ids = tokenized_inputs.word_ids(batch_index=i)
-        label_ids = [-100] * len(word_ids)
-
-        departure_tokens = tokenizer.tokenize(departure) if departure else []
-        destination_tokens = tokenizer.tokenize(destination) if destination else []
-
-        dep_idx, des_idx = 0, 0
-
-        for idx, word_id in enumerate(word_ids):
-            if word_id is None:
-                continue
-            token = tokenized_inputs.tokens(batch_index=i)[idx]
-            if token in ["<s>", "</s>", "<pad>"]:
-                continue
-            if dep_idx < len(departure_tokens) and token == departure_tokens[dep_idx]:
-                label_ids[idx] = 1 if dep_idx == 0 else 3
-                dep_idx += 1
-            elif des_idx < len(destination_tokens) and token == destination_tokens[des_idx]:
-                label_ids[idx] = 2 if des_idx == 0 else 4
-                des_idx += 1
-            else:
-                label_ids[idx] = 0
-        labels.append(label_ids)
-    tokenized_inputs["labels"] = labels
-    return tokenized_inputs
+camembert_ner_model = CamembertNERModel()
 
 # Tokenize and align dataset
-tokenized_dataset = dataset.map(tokenize_and_align_labels, batched=True)
+tokenized_dataset = dataset.map(camembert_ner_model.tokenize_and_align_labels, batched=True)
 test_texts = dataset["text"]
 test_labels = tokenized_dataset["labels"]
 
