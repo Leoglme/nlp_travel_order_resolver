@@ -241,6 +241,74 @@ plt.ylim(0, 1)
 plt.show()
 """))
 
+# Add ROC curve
+n.cells.append(nbf.v4.new_markdown_cell("## Courbe ROC"))
+n.cells.append(nbf.v4.new_markdown_cell("""
+La courbe ROC évalue la capacité du modèle à discriminer entre les classes.
+
+- **Axe X** : Taux de faux positifs (FPR).
+- **Axe Y** : Taux de vrais positifs (TPR).
+- Une courbe proche de la diagonale indique une mauvaise séparation des classes.
+- L'AUC (Area Under Curve) mesure l'efficacité globale (1 = parfait, 0.5 = aléatoire).
+"""))
+n.cells.append(nbf.v4.new_code_cell("""
+from sklearn.metrics import roc_curve, auc
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Conversion des étiquettes en un format binaire pour le ROC
+true_labels_bin = np.array([1 if label in [1, 3] else 0 for label in all_true_labels])  # B-DEP/I-DEP comme positifs
+predicted_labels_bin = np.array([1 if label in [1, 3] else 0 for label in all_predicted_labels])
+
+try:
+    fpr, tpr, _ = roc_curve(true_labels_bin, predicted_labels_bin)
+    roc_auc = auc(fpr, tpr)
+    plt.figure(figsize=(10, 6))
+    plt.plot(fpr, tpr, color='blue', label=f"ROC Curve (AUC = {roc_auc:.2f})")
+    plt.plot([0, 1], [0, 1], color="gray", linestyle="--")
+    plt.xlabel("Taux de faux positifs (FPR)")
+    plt.ylabel("Taux de vrais positifs (TPR)")
+    plt.title("Courbe ROC")
+    plt.legend()
+    plt.grid()
+    plt.show()
+except ValueError as e:
+    print(f"Erreur lors de la génération de la courbe ROC : {e}")
+"""))
+
+# Add initialization cell to define test_texts
+n.cells.append(nbf.v4.new_code_cell(f"""
+import json
+
+# Charger les données nécessaires pour le notebook
+test_texts = json.loads('''{json.dumps(test_texts)}''')
+"""))
+
+# Add sentence length histogram
+n.cells.append(nbf.v4.new_markdown_cell("## Distribution des longueurs des phrases"))
+n.cells.append(nbf.v4.new_markdown_cell("""
+Ce graphique montre la distribution des longueurs des phrases dans le dataset.
+
+- **Axe X** : Longueur des phrases (en tokens).
+- **Axe Y** : Nombre de phrases ayant cette longueur.
+- Ce graphique permet de vérifier si les performances du modèle varient en fonction de la complexité (longueur) des phrases.
+"""))
+n.cells.append(nbf.v4.new_code_cell("""
+import matplotlib.pyplot as plt
+
+# Calculer les longueurs des phrases
+sentence_lengths = [len(text.split()) for text in test_texts]
+
+# Tracer l'histogramme
+plt.figure(figsize=(10, 6))
+plt.hist(sentence_lengths, bins=30, color="skyblue", edgecolor="black")
+plt.xlabel("Longueur des phrases (tokens)")
+plt.ylabel("Nombre de phrases")
+plt.title("Distribution des longueurs des phrases")
+plt.grid()
+plt.show()
+"""))
+
 if not os.path.exists(notebook_dir):
     os.makedirs(notebook_dir)
 
