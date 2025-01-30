@@ -165,6 +165,7 @@ async def find_route_sncf(request: SentenceRequest):
     route_data = sncf_route_finder.find_shortest_route(departure, destination)
 
     if "error" in route_data:
+        print(route_data)
         logger.error(f"No route found from {departure} to {destination}")
         raise HTTPException(status_code=404, detail=f"No route found from {departure} to {destination}.")
 

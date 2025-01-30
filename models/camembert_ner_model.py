@@ -142,57 +142,64 @@ class CamembertNERModel:
         self.tokenizer = CamembertTokenizerFast.from_pretrained(self.output_dir)
 
     def extract_trip_details(self, sentence):
-        # Utiliser le modèle de classification d'intention pour vérifier si c'est un trajet
         is_trip_intent = self.intent_classifier.predict(sentence) == 1
-
-        # Si ce n'est pas une demande de trajet, retourner None pour départ et destination
         if not is_trip_intent:
             return None, None
 
-        # Préparer les inputs
         inputs = self.tokenizer(sentence, return_tensors="pt", padding=True, truncation=True)
         outputs = self.model(**inputs).logits
         predictions = np.argmax(outputs.detach().numpy(), axis=2)
 
         tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"].numpy()[0])
 
-        departure_city = None
-        destination_city = None
-        current_dep, current_des = [], []
+        print(f"Tokens: {tokens}")
+        print(f"Predictions: {predictions[0]}")
+
+        departure_city = []
+        destination_city = []
+        current_dep = []
+        current_des = []
 
         for token, prediction in zip(tokens, predictions[0]):
-            # Ignorer les tokens spéciaux
+            print(f"Extracting: Token={token}, Prediction={prediction}")  # Debug
+
             if token in ["<s>", "</s>", "<pad>"]:
                 continue
 
-            if prediction == 1:  # "B-DEP"
-                if current_dep:
-                    departure_city = " ".join(current_dep)
-                    current_dep = []
-                current_dep.append(token.replace("▁", ""))
-            elif prediction == 3:  # "I-DEP"
-                current_dep.append(token.replace("▁", ""))
-            elif prediction == 2:  # "B-ARR"
-                if current_des:
-                    destination_city = " ".join(current_des)
-                    current_des = []
-                current_des.append(token.replace("▁", ""))
-            elif prediction == 4:  # "I-ARR"
-                current_des.append(token.replace("▁", ""))
-            else:
-                # Finaliser les tokens accumulés s'il y a un changement
-                if current_dep:
-                    departure_city = " ".join(current_dep)
-                    current_dep = []
-                if current_des:
-                    destination_city = " ".join(current_des)
-                    current_des = []
+            # 🔹 Supprime le caractère "▁" qui marque le début des mots
+            clean_token = token.replace("▁", "")
 
-        # Si des tokens de départ ou de destination sont encore présents à la fin de la phrase, on les ajoute
+            if prediction == 1:  # "B-DEP" (Début d'une ville de départ)
+                if current_dep:
+                    departure_city.append("".join(current_dep))  # Ajouter la ville précédente
+                current_dep = [clean_token]  # Commencer une nouvelle ville
+            elif prediction == 3:  # "I-DEP" (Suite d'une ville de départ)
+                current_dep.append(clean_token)  # Ajouter le morceau
+
+            elif prediction == 2:  # "B-ARR" (Début d'une ville d'arrivée)
+                if current_des:
+                    destination_city.append("".join(current_des))  # Ajouter la ville précédente
+                current_des = [clean_token]  # Commencer une nouvelle ville
+            elif prediction == 4:  # "I-ARR" (Suite d'une ville d'arrivée)
+                current_des.append(clean_token)  # Ajouter le morceau
+
+        # 🔹 Ajouter la dernière ville détectée
         if current_dep:
-            departure_city = " ".join(current_dep)
+            departure_city.append("".join(current_dep))
         if current_des:
-            destination_city = " ".join(current_des)
+            destination_city.append("".join(current_des))
 
+        # 🔹 Fusionner les morceaux et éviter les erreurs
+        departure_city = " ".join(departure_city).capitalize() if departure_city else None
+        destination_city = " ".join(destination_city).capitalize() if destination_city else None
+
+        # **Correction principale : Vérifier que la ville ne finit pas par un seul caractère isolé**
+        if destination_city and len(destination_city) == 1:
+            destination_city = None  # Éviter que "S" soit pris comme ville
+        # remove all spaces from the city names
+        departure_city = departure_city.replace(" ", "")
+        destination_city = destination_city.replace(" ", "")
+
+        print(f"Final Extraction: Departure={departure_city}, Destination={destination_city}")
         return departure_city, destination_city
 

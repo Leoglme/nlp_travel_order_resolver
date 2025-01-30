@@ -46,7 +46,7 @@ class SNCFRouteFinder:
         with open(self.csv_file_path, 'r', encoding='utf-8') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                dep, arr = row['departure_city'], row['arrival_city']
+                dep, arr = row['departure_city'].lower(), row['arrival_city'].lower()
                 travel_time = int(row['travel_time'])  # travel time in minutes
 
                 # Convert coordinates to float and store locations
@@ -110,6 +110,8 @@ class SNCFRouteFinder:
         Returns:
             Dict: Contains departure, destination, route points, each segment's travel time, and total travel time.
         """
+        departure = departure.lower()
+        destination = destination.lower()
         path_with_times, total_travel_time = self._dijkstra(departure, destination)
         if not path_with_times:
             return {"error": "No route found between the specified stations."}

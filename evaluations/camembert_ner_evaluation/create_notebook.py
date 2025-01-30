@@ -1,5 +1,3 @@
-# Import necessary libraries
-# https://chatgpt.com/c/67499e38-a340-8012-8604-b28071c42e41
 import os
 import sys
 import json
@@ -12,17 +10,15 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 import nbformat as nbf
 import asyncio
 
-# Add the project root directory to the Python path
+# Ajouter le projet à Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-
 from models.camembert_ner_model import CamembertNERModel
 
-# Fix asyncio issue on Windows
-
+# Gestion des boucles asynchrones sous Windows
 if os.name == "nt":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
-# Paths and constants
+# Définition des chemins
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 notebook_dir = "evaluations/camembert_ner_evaluation"
 notebook_path = os.path.join(notebook_dir, "camembert_ner_evaluation.ipynb")
@@ -31,41 +27,43 @@ html_output_path = os.path.join(notebook_dir, "index.html")
 test_dataset_path = os.path.join(project_root, "datasets/camembert_ner_dataset.csv")
 model_path = "model_output/camembert_ner"
 
-# Define label mapping
+# Assure la création du répertoire des notebooks
+if not os.path.exists(notebook_dir):
+    os.makedirs(notebook_dir)
+
+# Définir les étiquettes du modèle
 label_list = ["O", "B-DEP", "B-ARR", "I-DEP", "I-ARR"]
 
-# Clean old files
-print("Deleting old files...")
+# Nettoyage des fichiers précédents
+print("Nettoyage des anciens fichiers...")
 for file_path in [notebook_path, executed_notebook_path, html_output_path]:
     if os.path.exists(file_path):
         os.remove(file_path)
-        print(f"Deleted: {file_path}")
+        print(f"Supprimé : {file_path}")
 
-# Load model and tokenizer
-print("Loading model and tokenizer...")
+# Charger le modèle et le tokenizer
+print("Chargement du modèle et du tokenizer...")
 tokenizer = CamembertTokenizerFast.from_pretrained(model_path)
 model = CamembertForTokenClassification.from_pretrained(model_path)
 
-# Load test dataset
-print("Loading and preparing test data...")
+# Charger le dataset de test
+print("Chargement des données de test...")
 if not os.path.exists(test_dataset_path):
-    raise FileNotFoundError(f"Dataset file not found: {test_dataset_path}")
+    raise FileNotFoundError(f"Fichier de dataset introuvable : {test_dataset_path}")
 
 dataset = load_dataset("csv", data_files={"test": test_dataset_path})["test"]
 camembert_ner_model = CamembertNERModel()
 
-# Tokenize and align dataset
+# Tokenisation et alignement des labels
 tokenized_dataset = dataset.map(camembert_ner_model.tokenize_and_align_labels, batched=True)
 test_texts = dataset["text"]
 test_labels = tokenized_dataset["labels"]
+num_rows_test_data = len(dataset)
 
-# Predict and collect results
-print("Making predictions...")
-results = []
-all_true_labels = []
-all_predicted_labels = []
-
-for i, text in enumerate(tqdm(test_texts, desc="Predicting")):
+# Prédictions
+print("Prédictions...")
+results, all_true_labels, all_predicted_labels = [], [], []
+for i, text in enumerate(tqdm(test_texts, desc="Prédictions")):
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True)
     with torch.no_grad():
         logits = model(**inputs).logits
@@ -87,206 +85,164 @@ for i, text in enumerate(tqdm(test_texts, desc="Predicting")):
         "true_labels": filtered_true_labels,
     })
 
-# Validate alignment of labels
+# Validation
 if len(all_true_labels) != len(all_predicted_labels):
-    raise ValueError("Filtered label lengths are inconsistent!")
+    raise ValueError("Longueur incohérente entre étiquettes réelles et prédites!")
 
-# Calculate performance metrics
-accuracy = accuracy_score(all_true_labels, all_predicted_labels)
-precision = precision_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0)
-recall = recall_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0)
-f1 = f1_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0)
-metrics = {"Accuracy": accuracy, "Precision": precision, "Recall": recall, "F1-Score": f1}
+# Calcul des métriques
+metrics = {
+    "Accuracy": accuracy_score(all_true_labels, all_predicted_labels),
+    "Precision": precision_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0),
+    "Recall": recall_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0),
+    "F1-Score": f1_score(all_true_labels, all_predicted_labels, average="weighted", zero_division=0),
+}
+classification_rep = classification_report(all_true_labels, all_predicted_labels, target_names=label_list,
+                                           zero_division=0)
 
-# Classification report
-classification_rep = classification_report(all_true_labels, all_predicted_labels, target_names=label_list, zero_division=0)
-
-# Serialize results
-results_serialized = json.dumps(results)
-true_labels_serialized = json.dumps(all_true_labels)
-predicted_labels_serialized = json.dumps(all_predicted_labels)
-metrics_serialized = json.dumps(metrics)
-
-# Create notebook
+# Création du notebook
 n = nbf.v4.new_notebook()
 
-# Add introduction and label description
-n.cells.append(nbf.v4.new_markdown_cell("# Évaluation du modèle Camembert NER"))
+# 1. Introduction
+n.cells.append(nbf.v4.new_markdown_cell(f"# Évaluation du modèle `Camembert NER`"))
+n.cells.append(nbf.v4.new_markdown_cell(f"### Ce notebook évalue les performances d'un modèle fine-tuné pour extraire les villes de départ et d'arrivée dans des textes."
+                                        "Il est basé sur un modèle Camembert fine-tuné sur un ensemble de données de "
+                                        "textes annotés pour l'extraction des entités nommées. "
+                                        f"Le modèle est évalué sur un dataset de test de {num_rows_test_data} lignes."))
+
+# 2. Exploration des données
+n.cells.append(nbf.v4.new_markdown_cell("## Exploration des Données"))
 n.cells.append(nbf.v4.new_markdown_cell("""
-Ce notebook présente l'évaluation du modèle NER Camembert pour la détection des entités suivantes :
-
-- **O** : Aucun intérêt, non lié à une ville.
-- **B-DEP** : Début d'une ville de départ.
-- **B-ARR** : Début d'une ville de destination.
-- **I-DEP** : Continuation d'une ville de départ.
-- **I-ARR** : Continuation d'une ville de destination.
-"""))
-
-# Add metrics visualization
-n.cells.append(nbf.v4.new_markdown_cell("## Visualisation des métriques de performance"))
-n.cells.append(nbf.v4.new_code_cell(f"""
-import matplotlib.pyplot as plt
-import json
-
-metrics = json.loads('''{metrics_serialized}''')
-
-plt.figure(figsize=(10, 6))
-plt.barh(list(metrics.keys()), list(metrics.values()), color=['skyblue', 'orange', 'green', 'purple'])
-plt.xlabel("Score")
-plt.title("Métriques de performance")
-for i, (key, value) in enumerate(metrics.items()):
-    plt.text(value, i, f"{{value:.2f}}")
-plt.show()
-"""))
-
-# Add confusion matrix
-n.cells.append(nbf.v4.new_markdown_cell("## Matrice de confusion"))
-n.cells.append(nbf.v4.new_markdown_cell("""
-La matrice de confusion compare les prédictions du modèle avec les étiquettes réelles :
-
-- Les **lignes** correspondent aux étiquettes réelles (ce que le modèle devait prédire).
-- Les **colonnes** correspondent aux étiquettes prédites (ce que le modèle a réellement prédit).
-- La diagonale principale montre les prédictions correctes.
+Le tableau suivant montre un aperçu des données utilisées pour l'évaluation du modèle.
+Chaque ligne correspond à une phrase annotée avec des villes de départ (B-DEP, I-DEP) et des villes d'arrivée (B-ARR, I-ARR).
 """))
 n.cells.append(nbf.v4.new_code_cell(f"""
-import json
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-import matplotlib.pyplot as plt
-
-all_true_labels = json.loads('''{true_labels_serialized}''')
-all_predicted_labels = json.loads('''{predicted_labels_serialized}''')
-
-classes = {label_list}
-cm = confusion_matrix(all_true_labels, all_predicted_labels, labels=range(len(classes)))
-disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=classes)
-disp.plot(cmap=plt.cm.Blues)
-plt.title("Matrice de confusion")
-plt.xlabel("Étiquettes prédites")
-plt.ylabel("Étiquettes réelles")
-plt.show()
+import pandas as pd
+pd.set_option('display.max_colwidth', None)
+dataset = pd.read_csv(r"{test_dataset_path}")
+dataset.head(10)
 """))
 
-# Add distribution plot
-n.cells.append(nbf.v4.new_markdown_cell("## Distribution des classes"))
+# 3. Statistiques sur les données
+n.cells.append(nbf.v4.new_markdown_cell("## Statistiques sur le Dataset"))
 n.cells.append(nbf.v4.new_markdown_cell("""
-Ce graphique montre la répartition des classes dans les étiquettes réelles et prédites :
-
-- **Axe X** : Les différentes classes (`O`, `B-DEP`, etc.).
-- **Axe Y** : Le nombre de tokens dans chaque classe.
-- Les barres permettent de comparer la répartition entre les étiquettes réelles et prédites.
+Ce graphique montre la fréquence des étiquettes (par exemple, "O", "B-DEP", "B-ARR") dans le dataset. 
+Cela permet d'identifier les déséquilibres éventuels entre les classes.
 """))
 n.cells.append(nbf.v4.new_code_cell(f"""
 from collections import Counter
-
-true_counts = Counter(all_true_labels)
-predicted_counts = Counter(all_predicted_labels)
-
-true_values = [true_counts.get(i, 0) for i in range(len(classes))]
-predicted_values = [predicted_counts.get(i, 0) for i in range(len(classes))]
-
-x = range(len(classes))
-plt.bar(x, true_values, width=0.4, label="Étiquettes réelles", align="center")
-plt.bar([p + 0.4 for p in x], predicted_values, width=0.4, label="Étiquettes prédites", align="center")
-plt.xticks([p + 0.2 for p in x], classes)
-plt.xlabel("Classes")
-plt.ylabel("Nombre de tokens")
-plt.legend()
-plt.title("Distribution des classes dans les étiquettes réelles et prédites")
-plt.show()
-"""))
-
-# Add F1-score per class
-n.cells.append(nbf.v4.new_markdown_cell("## F1-Score par classe"))
-n.cells.append(nbf.v4.new_markdown_cell("""
-Le F1-score par classe combine précision et rappel pour chaque classe :
-
-- **Axe X** : Les différentes classes (`O`, `B-DEP`, etc.).
-- **Axe Y** : Le score F1 (entre 0 et 1).
-- Plus le score F1 est proche de 1, meilleures sont les prédictions pour cette classe.
-"""))
-n.cells.append(nbf.v4.new_code_cell(f"""
-from sklearn.metrics import classification_report
 import matplotlib.pyplot as plt
 
-report = classification_report(all_true_labels, all_predicted_labels, target_names=classes, zero_division=0, output_dict=True)
-f1_scores = [report[cls]["f1-score"] for cls in classes]
+# Comptage des étiquettes
+label_counts = Counter([label for labels in {json.dumps(test_labels)} for label in labels if label != -100])
 
-plt.bar(classes, f1_scores, color='blue')
-plt.xlabel("Classes")
-plt.ylabel("F1-Score")
-plt.title("F1-Score par classe")
-plt.ylim(0, 1)
-plt.show()
-"""))
-
-# Add ROC curve
-n.cells.append(nbf.v4.new_markdown_cell("## Courbe ROC"))
-n.cells.append(nbf.v4.new_markdown_cell("""
-La courbe ROC évalue la capacité du modèle à discriminer entre les classes.
-
-- **Axe X** : Taux de faux positifs (FPR).
-- **Axe Y** : Taux de vrais positifs (TPR).
-- Une courbe proche de la diagonale indique une mauvaise séparation des classes.
-- L'AUC (Area Under Curve) mesure l'efficacité globale (1 = parfait, 0.5 = aléatoire).
-"""))
-n.cells.append(nbf.v4.new_code_cell("""
-from sklearn.metrics import roc_curve, auc
-import numpy as np
-import matplotlib.pyplot as plt
-
-# Conversion des étiquettes en un format binaire pour le ROC
-true_labels_bin = np.array([1 if label in [1, 3] else 0 for label in all_true_labels])  # B-DEP/I-DEP comme positifs
-predicted_labels_bin = np.array([1 if label in [1, 3] else 0 for label in all_predicted_labels])
-
-try:
-    fpr, tpr, _ = roc_curve(true_labels_bin, predicted_labels_bin)
-    roc_auc = auc(fpr, tpr)
-    plt.figure(figsize=(10, 6))
-    plt.plot(fpr, tpr, color='blue', label=f"ROC Curve (AUC = {roc_auc:.2f})")
-    plt.plot([0, 1], [0, 1], color="gray", linestyle="--")
-    plt.xlabel("Taux de faux positifs (FPR)")
-    plt.ylabel("Taux de vrais positifs (TPR)")
-    plt.title("Courbe ROC")
-    plt.legend()
-    plt.grid()
-    plt.show()
-except ValueError as e:
-    print(f"Erreur lors de la génération de la courbe ROC : {e}")
-"""))
-
-# Add initialization cell to define test_texts
-n.cells.append(nbf.v4.new_code_cell(f"""
-import json
-
-# Charger les données nécessaires pour le notebook
-test_texts = json.loads('''{json.dumps(test_texts)}''')
-"""))
-
-# Add sentence length histogram
-n.cells.append(nbf.v4.new_markdown_cell("## Distribution des longueurs des phrases"))
-n.cells.append(nbf.v4.new_markdown_cell("""
-Ce graphique montre la distribution des longueurs des phrases dans le dataset.
-
-- **Axe X** : Longueur des phrases (en tokens).
-- **Axe Y** : Nombre de phrases ayant cette longueur.
-- Ce graphique permet de vérifier si les performances du modèle varient en fonction de la complexité (longueur) des phrases.
-"""))
-n.cells.append(nbf.v4.new_code_cell("""
-import matplotlib.pyplot as plt
-
-# Calculer les longueurs des phrases
-sentence_lengths = [len(text.split()) for text in test_texts]
-
-# Tracer l'histogramme
 plt.figure(figsize=(10, 6))
-plt.hist(sentence_lengths, bins=30, color="skyblue", edgecolor="black")
-plt.xlabel("Longueur des phrases (tokens)")
-plt.ylabel("Nombre de phrases")
-plt.title("Distribution des longueurs des phrases")
-plt.grid()
+plt.bar({json.dumps(label_list)}, [label_counts.get(i, 0) for i in range(len({json.dumps(label_list)}))], color='skyblue')
+plt.title("Répartition des classes dans le dataset")
+plt.xlabel("Classes")
+plt.ylabel("Nombre d'occurrences")
+plt.grid(axis='y')
 plt.show()
 """))
 
+# 4. Visualisation des métriques
+n.cells.append(nbf.v4.new_markdown_cell("## Visualisation des métriques de performance"))
+
+n.cells.append(nbf.v4.new_markdown_cell("""
+Ce graphique en barres montre les métriques de performance du modèle :
+- **Précision (Accuracy)** : La proportion des prédictions correctes parmi toutes les prédictions.
+- **Précision (Precision)** : Proportion de prédictions correctes parmi les cas réels.
+- **Rappel (Recall)** : Moyenne harmonique de la précision et du rappel.
+- **Score F1** : Proportion globale de prédictions correctes.
+"""))
+
+n.cells.append(nbf.v4.new_code_cell(f"""
+plt.figure(figsize=(8, 5))
+plt.barh(list({metrics}.keys()), list({metrics}.values()), color=['skyblue', 'orange', 'green', 'purple'])
+plt.xlabel("Score")
+plt.title("Model Performance Metrics")
+for i, value in enumerate({metrics}.values()):
+    plt.text(value, i, {{value}}:.2f)
+plt.show()
+"""))
+
+# 5. Matrice de confusion
+n.cells.append(nbf.v4.new_markdown_cell("## Matrice de Confusion"))
+n.cells.append(nbf.v4.new_markdown_cell("""
+La matrice de confusion ci-dessous indique comment le modèle a prédit les étiquettes pour les tokens. 
+Chaque cellule montre le nombre de fois où une étiquette réelle a été prédite comme une autre.
+- **Lignes** : étiquettes réelles.
+- **Colonnes** : étiquettes prédites.
+"""))
+n.cells.append(nbf.v4.new_code_cell(f"""
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+
+# Calcul et affichage
+cm = confusion_matrix({all_true_labels}, {all_predicted_labels})
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels={label_list})
+
+plt.figure(figsize=(10, 8))
+disp.plot(cmap=plt.cm.Blues, xticks_rotation=45)
+plt.title("Matrice de confusion")
+plt.xlabel("Étiquette Prédite")
+plt.ylabel("Étiquette Réelle")
+plt.grid(False)
+plt.show()
+"""))
+
+# # 6. Interface interactive
+# n.cells.append(nbf.v4.new_markdown_cell("## Interface Interactive"))
+# n.cells.append(nbf.v4.new_markdown_cell("""
+# Cette interface permet de tester le modèle en entrant une phrase et en obtenant les prédictions token par token.
+# """))
+# n.cells.append(nbf.v4.new_code_cell(f"""
+# from transformers import CamembertTokenizerFast, CamembertForTokenClassification
+# import torch
+# from ipywidgets import interact
+# import os
+#
+# # Définition des étiquettes du modèle
+# label_list = {json.dumps(label_list)}
+#
+# # Chemin vers le modèle
+# model_path = r"{model_path}"
+#
+# # Vérification du contenu du chemin
+# if not os.path.exists(model_path):
+#     raise FileNotFoundError(f"Le chemin spécifié pour le modèle ({model_path}) n'existe pas.")
+#
+# print(f"Contenu du dossier {model_path} :", os.listdir(model_path))
+#
+# # Chargement du tokenizer et du modèle
+# try:
+#     tokenizer = CamembertTokenizerFast.from_pretrained(model_path, local_files_only=True)
+#     model = CamembertForTokenClassification.from_pretrained(model_path, local_files_only=True)
+# except OSError as e:
+#     print(f"Erreur : Impossible de charger les fichiers nécessaires depuis {model_path}.")
+#     print("Vérifiez que le dossier contient tous les fichiers nécessaires : tokenizer.json, config.json, etc.")
+#     raise e
+#
+# def test_model(sentence):
+#     \"\"\"Teste le modèle sur une phrase entrée par l'utilisateur.\"\"\"
+#     try:
+#         # Prétraitement de la phrase
+#         inputs = tokenizer(sentence, return_tensors="pt", padding=True, truncation=True)
+#         with torch.no_grad():
+#             logits = model(**inputs).logits
+#         # Prédictions
+#         predictions = torch.argmax(logits, dim=2).numpy()[0]
+#         tokens = tokenizer.convert_ids_to_tokens(inputs["input_ids"][0])
+#         # Retourne les prédictions pour chaque token
+#         return dict(zip(tokens, [label_list[p] for p in predictions]))
+#     except Exception as e:
+#         print(f"Erreur lors de la prédiction")
+#         raise e
+#
+# # Interface interactive
+# interact(test_model, sentence="Je veux aller de Paris à Marseille")
+# """))
+
+# Sauvegarde du notebook généré
 if not os.path.exists(notebook_dir):
     os.makedirs(notebook_dir)
 

@@ -11,24 +11,29 @@ nest_asyncio.apply()
 # Initialize geolocator
 geolocator = Nominatim(user_agent="geoapiExercises")
 
+
 # Function to get city name from coordinates asynchronously
 async def get_city_name(session, lat, lon, city_cache):
     if (lat, lon) in city_cache:
         return city_cache[(lat, lon)]
-    async with session.get(f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=10") as response:
+    async with session.get(
+            f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=10") as response:
         data = await response.json()
         address = data.get('address', {})
         city = address.get('city', '') or address.get('town', '') or address.get('village', '')
         city_cache[(lat, lon)] = city
         return city
 
+
 # Function to calculate trip duration from stop times
 def calculate_trip_duration(start_time, end_time):
     start_hours, start_minutes, start_seconds = map(int, start_time.split(':'))
     end_hours, end_minutes, end_seconds = map(int, end_time.split(':'))
-    duration_seconds = (end_hours * 3600 + end_minutes * 60 + end_seconds) - (start_hours * 3600 + start_minutes * 60 + start_seconds)
+    duration_seconds = (end_hours * 3600 + end_minutes * 60 + end_seconds) - (
+            start_hours * 3600 + start_minutes * 60 + start_seconds)
     duration_minutes = duration_seconds // 60
     return str(duration_minutes)
+
 
 # Load stops data (only valid StopPoints)
 stops = {}
@@ -43,18 +48,18 @@ with open('assets/data_sncf/stops.txt', 'r', encoding='utf-8') as file:
                 'parent_station': row['parent_station']
             }
 
-# Function to dynamically find stop IDs for specific cities
-def find_stop_ids_by_city(cities):
+
+# Function to dynamically find stop IDs for all cities
+def find_all_stop_ids():
     stop_ids = []
     for stop_id, stop_data in stops.items():
-        if any(city.lower() in stop_data['stop_name'].lower() for city in cities):
-            stop_ids.append(stop_id)
+        stop_ids.append(stop_id)
     return stop_ids
+
 
 # Main function
 async def main():
-    cities = ['Rennes', 'Paris', 'Bordeaux', 'Biarritz']  # You can add more cities here
-    target_stop_ids = find_stop_ids_by_city(cities)
+    target_stop_ids = find_all_stop_ids()
 
     # Load stop times data
     stop_times = {}
@@ -137,11 +142,11 @@ async def main():
 
                             if departure_stop and arrival_stop:
                                 departure_city = await get_city_name(session, departure_stop['stop_lat'],
-                                                                   departure_stop['stop_lon'], city_cache)
+                                                                     departure_stop['stop_lon'], city_cache)
                                 arrival_city = await get_city_name(session, arrival_stop['stop_lat'],
-                                                                    arrival_stop['stop_lon'], city_cache)
+                                                                   arrival_stop['stop_lon'], city_cache)
                                 travel_time = calculate_trip_duration(prev_stop['departure_time'],
-                                                                       current_stop['arrival_time'])
+                                                                      current_stop['arrival_time'])
 
                                 # Create a tuple to represent the trip segment
                                 trip_segment = (
@@ -167,6 +172,7 @@ async def main():
                                         # departure_coordinates
                                         f"{arrival_stop['stop_lat']},{arrival_stop['stop_lon']}"  # arrival_coordinates
                                     ])
+
 
 # Run the main function
 asyncio.run(main())
