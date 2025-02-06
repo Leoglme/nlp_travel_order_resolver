@@ -1,0 +1,41 @@
+text,departure,destination
+Elle cherche un itinéraire jusqu'à Nice à Paris,Nice,Paris
+Je veux aller de Biarritz à Marseille,Biarritz,Marseille
+Il prévoit de partir de Lyon à Toulouse demain,Lyon,Toulouse
+Nous réservons un billet pour un trajet de Bordeaux à Nantes,Bordeaux,Nantes
+Elle va prendre le train de Strasbourg à Lille,Strasbourg,Lille
+Il part de Montpellier pour aller à Lyon,Montpellier,Lyon
+Elle cherche un vol de Paris à Nice,Paris,Nice
+Il prend l'avion pour un trajet entre Lyon et Marseille,Lyon,Marseille
+Nous prévoyons de partir de Toulouse pour visiter Bordeaux,Toulouse,Bordeaux
+Je cherche un itinéraire en train de Nantes à Rennes,Nantes,Rennes
+Nous devons partir demain matin de Marseille à Strasbourg,Marseille,Strasbourg
+Je dois rejoindre mes amis de Bordeaux à Paris,Bordeaux,Paris
+Il a prévu de voyager de Lille à Toulouse,Lille,Toulouse
+Je pars de Nice pour un séjour à Paris,Nice,Paris
+Nous avons réservé un billet de Rennes à Lyon,Rennes,Lyon
+"Je suis de Royan, en visite à La Rochelle pour quelques jours.",Royan,La Rochelle
+"Originaire de Saint-Quentin, actuellement en déplacement à Laon.",Saint-Quentin,Laon
+"Je vis à Fougères, mais je suis en déplacement à Vitré.",Fougères,Vitré
+"Je viens de Manosque, en visite à Digne-les-Bains pour le travail.",Manosque,Digne-les-Bains
+"Je suis de Dinan, actuellement à Saint-Malo pour une conférence.",Dinan,Saint-Malo
+"Originaire de Saint-Jean-de-Luz, actuellement à Bayonne pour le travail.",Saint-Jean-de-Luz,Bayonne
+"Je vis à Chambéry, mais je passe quelques jours à Aix-les-Bains.",Chambéry,Aix-les-Bains
+"Je viens de Lannion, en visite à Morlaix pour le weekend.",Lannion,Morlaix
+"Je suis de Tulle, mais je suis actuellement en visite à Limoges.",Tulle,Limoges
+"Originaire de Morlaix, en déplacement à Brest pour un événement.",Morlaix,Brest
+"Je suis de La Baule, actuellement en visite à Saint-Nazaire.",La Baule,Saint-Nazaire
+"Je vis à Alès, mais je passe quelques jours à Uzès.",Alès,Uzès
+"Je viens de Sisteron, en déplacement à Manosque pour un projet.",Sisteron,Manosque
+"Je suis de Dieppe, mais je suis en visite à Rouen pour le travail.",Dieppe,Rouen
+"Originaire de Pamiers, actuellement à Foix pour une conférence.",Pamiers,Foix
+"Je vis à Dax, mais je suis en déplacement à Mont-de-Marsan.",Dax,Mont-de-Marsan
+"Je viens de Bergerac, actuellement en visite à Périgueux.",Bergerac,Périgueux
+"Je suis de Cosne-Cours-sur-Loire, en déplacement à Nevers.",Cosne-Cours-sur-Loire,Nevers
+"Originaire de Saint-Lô, actuellement en visite à Coutances.",Saint-Lô,Coutances
+"Je vis à Crest, mais je suis en déplacement à Valence.",Crest,Valence
+"Je viens de Sens, en visite à Auxerre pour un séminaire.",Sens,Auxerre
+"Je suis de Lure, actuellement à Vesoul pour un projet.",Lure,Vesoul
+"Originaire de Douarnenez, en déplacement à Quimper pour le travail.",Douarnenez,Quimper
+"Je vis à Saintes, mais je suis en déplacement à La Rochelle.",Saintes,La Rochelle
+"Je viens de Vesoul, actuellement en visite à Luxeuil-les-Bains.",Vesoul,Luxeuil-les-Bains
