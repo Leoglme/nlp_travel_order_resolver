@@ -68,7 +68,7 @@ This endpoint takes an audio file as input and returns the text transcription.
     ```
 - **cURL**:
     ```bash
-    curl -X POST "http://127.0.0.1:8000/api/audio-to-text" \
+    curl -X POST "http://127.0.0.1:8002/api/audio-to-text" \
          -H "accept: application/json" \
          -H "Content-Type: multipart/form-data" \
          -F "file=@/path/to/your/audio/file.wav"
@@ -90,7 +90,7 @@ This endpoint takes a sentence as input and verifies if it is written in French 
     ```
 - **cURL**:
     ```bash
-    curl -X POST "http://127.0.0.1:8000/api/validate-travel-intent" \
+    curl -X POST "http://127.0.0.1:8002/api/validate-travel-intent" \
          -H "accept: application/json" \
          -H "Content-Type: application/json" \
          -d '{"sentence": "je veux voyager de Paris à Lyon"}'
@@ -113,7 +113,7 @@ This endpoint extracts departure and destination cities from the sentence and re
     ```
 - **cURL**:
     ```bash
-    curl -X POST "http://127.0.0.1:8000/api/sncf/find-route" \
+    curl -X POST "http://127.0.0.1:8002/api/sncf/find-route" \
          -H "accept: application/json" \
          -H "Content-Type: application/json" \
          -d '{"sentence": "Je pars de Paris pour aller à Lyon"}'

@@ -50,15 +50,24 @@ onMounted(async () => {
     const routeCoordinates = props.data.route.map(point => [point.latitude, point.longitude])
 
     // Ajouter un marqueur pour chaque point de la route
-    props.data.route.forEach(point => {
+    for (let i = 0; i < props.data.route.length - 1; i++) {
+      const point = props.data.route[i]
+      const previousPoint = props.data.route[i -1]
+      const travelTime = point.travel_time
+
       const marker = L.marker([point.latitude, point.longitude]).addTo(map)
-      marker.bindPopup(`<b>${point.stop_name}</b><br>${point.name}<br>Temps de voyage: ${point.travel_time} minutes`)
-    })
+      marker.bindPopup(`
+          <b class="capitalize">${previousPoint ? previousPoint.id + " →" : ""}  ${point.id}</b><br>
+          Durée: ${travelTime >= 60 ? `${Math.floor(travelTime / 60)}h ${travelTime % 60}m` : `${travelTime} minutes`}
+      `)
+    }
 
     // Tracer une ligne entre les points pour représenter l'itinéraire
-    L.polyline(routeCoordinates, { color: 'blue' }).addTo(map)
+    // @ts-ignore
+    L.polyline(routeCoordinates, { color: '#0077B6' }).addTo(map)
 
     // Adapter la vue de la carte pour inclure l'ensemble de l'itinéraire
+    // @ts-ignore
     map.fitBounds(routeCoordinates)
   }
 })

@@ -6,8 +6,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from services.sncf.sncf_route_finder import SNCFRouteFinder
 
-departures = ["rennes"]
-destinations = ["angers"]
+departures = ["Rennes"]
+destinations = ["Biarritz"]
 
 for departure in departures:
     for destination in destinations:

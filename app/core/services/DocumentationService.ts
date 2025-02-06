@@ -45,6 +45,19 @@ export default class DocumentationService extends BaseApiService {
      * @returns {Promise<HtmlDocumentationResponse | ErrorResponse>}
      * A promise resolved with the HTML report as a string, or an error response.
      */
+    static async getSncfRouteFinderEvaluation(): Promise<HtmlDocumentationResponse | ErrorResponse> {
+        try {
+            return await this.get<HtmlDocumentationResponse>('/api/sncf_route_finder_evaluation/index.html');
+        } catch (error) {
+            return {error: 'Unable to fetch the evaluation report.'} as unknown as ErrorResponse;
+        }
+    }
+
+    /**
+     * Fetches the HTML evaluation report for the departure and arrival extraction.
+     * @returns {Promise<HtmlDocumentationResponse | ErrorResponse>}
+     * A promise resolved with the HTML report as a string, or an error response.
+     */
     static async getCamembertNERModelEvaluation(): Promise<HtmlDocumentationResponse | ErrorResponse> {
         try {
             return await this.get<HtmlDocumentationResponse>('/api/camembert_ner_evaluation/index.html');
@@ -74,6 +87,30 @@ export default class DocumentationService extends BaseApiService {
             return await this.get<MarkdownDocumentationResponse>('/api/exemple_processing_markdown');
         } catch (error) {
             return {error: 'Unable to fetch the exemple processing content.'} as unknown as ErrorResponse;
+        }
+    }
+
+    /**
+     * Fetches the Markdown content for the "Decision Analysis" documentation.
+     * @returns {Promise<MarkdownDocumentationResponse | ErrorResponse>} A promise resolved with the Markdown content as a string, or an error response.
+     */
+    static async getDecisionAnalysisMarkdown(): Promise<MarkdownDocumentationResponse | ErrorResponse> {
+        try {
+            return await this.get<MarkdownDocumentationResponse>('/api/decision_analysis_markdown');
+        } catch (error) {
+            return {error: 'Unable to fetch the decision analysis content.'} as unknown as ErrorResponse;
+        }
+    }
+
+    /**
+     * Fetches the Markdown content for the user guide "How to use" documentation.
+     * @returns {Promise<MarkdownDocumentationResponse | ErrorResponse>} A promise resolved with the Markdown content as a string, or an error response.
+     */
+    static async getHowToUseMarkdown(): Promise<MarkdownDocumentationResponse | ErrorResponse> {
+        try {
+            return await this.get<MarkdownDocumentationResponse>('/api/user_guide/how_to_use_markdown');
+        } catch (error) {
+            return {error: 'Unable to fetch the how to use content.'} as unknown as ErrorResponse;
         }
     }
 

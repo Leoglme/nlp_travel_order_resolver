@@ -63,6 +63,37 @@ Ce notebook évalue les performances du modèle de détection de langues.
 Le modèle utilise FastText pour identifier la langue d'un texte donné.
 """))
 
+
+n.cells.append(nbf.v4.new_markdown_cell("""
+## 📌 Justification : Pourquoi le modèle de détection de langue n’est pas entraîné ?
+
+#### 🔍 Utilisation du modèle `lid.176.bin` de FastText
+Nous utilisons le modèle pré-entraîné `lid.176.bin` de FastText, qui est un **modèle déjà entraîné sur 176 langues**.  
+Ce modèle a été conçu par **Facebook AI** et est largement utilisé pour la détection de langues grâce à son **efficacité et sa rapidité**.
+
+#### ❓ Pourquoi ne pas entraîner notre propre modèle ?
+1. **Base de données linguistique massive**  
+   - `lid.176.bin` est entraîné sur un très grand corpus multilingue couvrant de nombreuses variations linguistiques.  
+   - Il capture mieux **les variations d'écriture**, **les erreurs typographiques** et **les expressions courantes** dans chaque langue.
+
+2. **Performance optimale dès le départ**  
+   - Nous avons testé `lid.176.bin` avec **plusieurs phrases en différentes langues** (notamment en français).  
+   - Les résultats ont montré une **précision élevée**, rendant un nouvel entraînement inutile pour notre besoin.
+
+3. **Économie de ressources**  
+   - L'entraînement d'un modèle de détection de langue **nécessite une énorme quantité de données** et des ressources GPU importantes.  
+   - En utilisant un modèle pré-entraîné, nous évitons **du temps d'entraînement** tout en bénéficiant d'une **excellente précision**.
+
+#### 📌 Conclusion
+Le modèle `lid.176.bin` de FastText répond parfaitement à nos besoins.  
+- Il est **rapide** ⚡  
+- Il est **précis** 🎯  
+- Il **gère 176 langues** sans besoin de **fine-tuning**  
+
+Ainsi, **l'entraîner à nouveau serait redondant et inefficace**.  
+Nous utilisons donc ce modèle **tel quel** pour nos prédictions.
+"""))
+
 # Inject the dataset into the notebook
 n.cells.append(nbf.v4.new_code_cell(f"""
 import pandas as pd

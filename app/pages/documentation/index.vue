@@ -1,5 +1,6 @@
 <template>
   <div>
+    <EpiPreCopyButton />
     <div
         v-if="projectIntroductionMarkdown"
         v-html="projectIntroductionMarkdown"
@@ -17,6 +18,7 @@ import DocumentationService from "~/core/services/DocumentationService";
 import type { MarkdownDocumentationResponse } from "~/core/services/DocumentationService";
 import type { ErrorResponse } from "~/core/types/response";
 import type {Ref} from "vue";
+import EpiPreCopyButton from "~/components/buttons/EpiPreCopyButton.vue";
 
 // Define page meta
 definePageMeta({ layout: 'documentation' })

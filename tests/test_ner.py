@@ -12,7 +12,7 @@ from models.camembert_ner_model import CamembertNERModel
 # Liste des textes et des départs/arrivées attendus (None si aucun trajet)
 texts = [
     ("Je veux allez de Rennes à Paris", ("Rennes", "Paris")),
-    ("J'habites à Nantes, je suis à Angers et je veux rentrer chez moi", ("Rennes", "Paris"))
+    ("J'habites à Nantes, je suis à Angers et je veux rentrer chez moi", ("Angers", "Nantes"))
 ]
 
 # Initialiser le modèle

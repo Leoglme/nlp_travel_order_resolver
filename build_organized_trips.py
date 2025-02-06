@@ -111,7 +111,7 @@ async def main():
     city_cache = {}
 
     async with aiohttp.ClientSession() as session:
-        with open('assets/data_sncf/organized_trips.csv', 'w', newline='', encoding='utf-8') as file:
+        with open('assets/data_sncf/organized_trips_2.csv', 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow(['departure_city', 'arrival_city', 'departure_station', 'arrival_station',
                              'travel_time', 'departure_coordinates', 'arrival_coordinates'])
@@ -176,4 +176,4 @@ async def main():
 
 # Run the main function
 asyncio.run(main())
-print("Le fichier organized_trips.csv a été créé avec succès.")
+print("Le fichier organized_trips_2.csv a été créé avec succès.")

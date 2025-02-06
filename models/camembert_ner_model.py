@@ -152,16 +152,12 @@ class CamembertNERModel:
 
         tokens = self.tokenizer.convert_ids_to_tokens(inputs["input_ids"].numpy()[0])
 
-        print(f"Tokens: {tokens}")
-        print(f"Predictions: {predictions[0]}")
-
         departure_city = []
         destination_city = []
         current_dep = []
         current_des = []
 
         for token, prediction in zip(tokens, predictions[0]):
-            print(f"Extracting: Token={token}, Prediction={prediction}")  # Debug
 
             if token in ["<s>", "</s>", "<pad>"]:
                 continue
@@ -200,6 +196,5 @@ class CamembertNERModel:
         departure_city = departure_city.replace(" ", "")
         destination_city = destination_city.replace(" ", "")
 
-        print(f"Final Extraction: Departure={departure_city}, Destination={destination_city}")
         return departure_city, destination_city
 

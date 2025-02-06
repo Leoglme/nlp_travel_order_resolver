@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 class SentenceRequest(BaseModel):
     sentence: str
 
+
 class AudioToTextResponse(BaseModel):
     is_audio_comprehensible: bool
     is_recognition_service_available: bool
@@ -47,8 +48,6 @@ class ValidationResponse(BaseModel):
     is_trip_related: bool
     is_correct_language: bool
     reason: str
-
-
 
 
 class RoutePoint(BaseModel):
@@ -105,8 +104,6 @@ async def audio_to_text_route(file: UploadFile = File(...)):
     finally:
         if os.path.exists(temp_wav_path):
             os.remove(temp_wav_path)
-
-
 
 
 # 3. Route to validate the text (check French and travel intention)
@@ -208,6 +205,7 @@ def language_identification_evaluation_html():
         return FileResponse(file_path, media_type="text/html")
     return {"error": "File not found"}
 
+
 # 7. Route to serve the departure and destination extraction evaluation report (HTML)
 @app.get("/api/camembert_ner_evaluation/index.html")
 def camembert_ner_evaluation_html():
@@ -256,4 +254,35 @@ def architecture_schema_pdf():
     file_path = "documentation/architecture-schema.pdf"
     if os.path.exists(file_path):
         return FileResponse(file_path, media_type="application/pdf", filename="architecture-schema.pdf")
+    return {"error": "File not found"}
+
+
+# 12. Route to serve the documentation/how-to-use.md file as plain text
+@app.get("/api/user_guide/how_to_use_markdown")
+def how_to_use_markdown():
+    file_path = "documentation/how-to-use.md"
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+        return PlainTextResponse(content, media_type="text/plain")
+    return {"error": "File not found"}
+
+
+# 13. Route to serve the sncf_route_finder_evaluation evaluation report (HTML)
+@app.get("/api/sncf_route_finder_evaluation/index.html")
+def language_identification_evaluation_html():
+    file_path = "evaluations/sncf_route_finder_evaluation/index.html"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"error": "File not found"}
+
+
+# 14. Route to serve the documentation/decision-analysis.md file as plain text
+@app.get("/api/decision_analysis_markdown")
+def decision_analysis_markdown():
+    file_path = "documentation/decision-analysis.md"
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as file:
+            content = file.read()
+        return PlainTextResponse(content, media_type="text/plain")
     return {"error": "File not found"}

@@ -21,6 +21,42 @@ Avant de commencer, assurez-vous d'avoir les éléments suivants installés :
 - Pip pour gérer les paquets Python
 - Virtualenv (optionnel mais recommandé pour gérer l'environnement de développement)
 
+## Technologies Utilisées
+
+Ce projet repose sur un ensemble de technologies modernes pour le traitement du langage naturel, l'optimisation d'itinéraires et le développement web :
+
+### 🔹 **Backend**
+- **FastAPI** : Framework web asynchrone pour créer des APIs rapides et performantes.
+- **Pydantic** : Validation et gestion des données pour FastAPI.
+- **Uvicorn** : Serveur ASGI performant utilisé pour exécuter l'API FastAPI.
+
+### 🔹 **Traitement du Langage Naturel (NLP)**
+- **Hugging Face Transformers** : Utilisé pour le fine-tuning et l'inférence avec **DistilBERT** et **CamemBERT**.
+- **FastText** : Détection de la langue pour filtrer les phrases en français.
+- **SeqEval** : Évaluation des modèles de reconnaissance d'entités nommées.
+- **RapidFuzz** : Algorithme de fuzzy matching pour améliorer l'extraction des villes.
+
+### 🔹 **Données et Calculs**
+- **Scikit-learn** : Outils d'analyse et d'évaluation des modèles.
+- **Pandas** : Manipulation et structuration des données.
+- **Geopy** : Gestion des coordonnées géographiques et calculs de distances.
+- **Matplotlib** : Visualisation des résultats et des données.
+
+### 🔹 **Reconnaissance Vocale**
+- **SpeechRecognition** : Conversion audio → texte.
+- **PyAudio** : Gestion des entrées audio.
+- **Pydub** : Manipulation et conversion des fichiers audio.
+
+### 🔹 **Frontend**
+- **NuxtJS** : Framework Vue 3 utilisé pour l'application web.
+- **Vue Router** : Gestion des routes côté client.
+- **Pinia** : Gestion d'état moderne pour Vue.js.
+- **Leaflet & Mapbox GL** : Affichage des cartes et des itinéraires.
+- **Marked** : Rendu de contenu Markdown dans l'interface utilisateur.
+- **TailwindCSS** : Design et mise en page fluide.
+
+
+
 ## Installation
 
 Clonez le dépôt, puis installez les dépendances nécessaires.
@@ -82,7 +118,7 @@ L'API est construite avec FastAPI et offre plusieurs endpoints pour interagir av
      - **Exemple** :
 
        ```bash
-       curl -X POST "http://127.0.0.1:8000/api/audio-to-text" -F "file=@path/to/your/audiofile.wav"
+       curl -X POST "http://127.0.0.1:8002/api/audio-to-text" -F "file=@path/to/your/audiofile.wav"
        ```
 
    - `POST /api/validate-travel-intent` : Valide si la phrase est en français et contient une intention d'itinéraire.
@@ -90,7 +126,9 @@ L'API est construite avec FastAPI et offre plusieurs endpoints pour interagir av
      - **Exemple** :
 
        ```bash
-       curl -X POST "http://127.0.0.1:8000/api/validate-travel-intent" -H "Content-Type: application/json" -d '{"sentence": "Je veux aller de Rennes à Biarritz"}'
+       curl -X POST "http://127.0.0.1:8002/api/validate-travel-intent" 
+       -H "Content-Type: application/json" 
+       -d '{"sentence": "Je veux aller de Rennes à Biarritz"}'
        ```
 
    - `POST /api/sncf/find-route` : Extrait les villes de départ et de destination et fournit l'itinéraire optimal.
@@ -98,7 +136,9 @@ L'API est construite avec FastAPI et offre plusieurs endpoints pour interagir av
      - **Exemple** :
 
        ```bash
-       curl -X POST "http://127.0.0.1:8000/api/sncf/find-route" -H "Content-Type: application/json" -d '{"sentence": "Je veux aller de Rennes à Biarritz"}'
+       curl -X POST "http://127.0.0.1:8002/api/sncf/find-route" 
+       -H "Content-Type: application/json" 
+       -d '{"sentence": "Je veux aller de Rennes à Biarritz"}'
        ```
 
 ### Fonctionnement du Traitement d'une Demande

@@ -1,0 +1,2 @@
+- Page documentation:
+    - [ ] rajouter une analyse en dessous de chaque graph
