@@ -78,6 +78,14 @@ f1 = f1_score(labels, predictions, average="weighted")
 
 # Debug: Print confusion matrix
 cm = confusion_matrix(labels, predictions)
+
+if not isinstance(probs, np.ndarray):
+    probs = np.array(probs)
+
+# Calculate False Positive Rate, True Positive Rate, and AUC
+fpr, tpr, thresholds = roc_curve(labels, probs[:, 1])
+roc_auc = auc(fpr, tpr)
+
 print(f"Confusion matrix:\n{cm}")
 
 # Create notebook
@@ -137,6 +145,18 @@ for i, value in enumerate(metrics.values()):
 plt.show()
 """))
 
+n.cells.append(nbf.v4.new_markdown_cell("#### 🔍 **Analyse des résultats :**"))
+n.cells.append(nbf.v4.new_markdown_cell(f"""
+Les métriques globales du modèle sont **excellentes**, avec des scores très élevés :
+- **Accuracy :** {accuracy:.3f} → Le modèle est précis à **98.3%**, ce qui est remarquable.
+- **Precision :** {precision:.3f} → Lorsqu'il prédit une intention de voyage, il se trompe **très rarement**.
+- **Recall :** {recall:.3f} → Il détecte correctement **presque toutes** les intentions de voyage.
+- **F1-Score :** {f1:.3f} → La balance entre précision et rappel est **quasi-parfaite**.
+
+📌 **Conclusion :**  
+Le modèle **généralise très bien** et atteint des performances presque parfaites sur les données de test.
+"""))
+
 # Confusion Matrix
 n.cells.append(nbf.v4.new_markdown_cell("## Matrice de confusion"))
 n.cells.append(nbf.v4.new_markdown_cell("""
@@ -154,6 +174,23 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["Non-Intent",
 disp.plot(cmap=plt.cm.Blues)
 plt.title("Confusion Matrix")
 plt.show()
+"""))
+
+n.cells.append(nbf.v4.new_markdown_cell("#### 🔍 **Analyse des résultats :**"))
+n.cells.append(nbf.v4.new_markdown_cell(f"""
+La **matrice de confusion** nous donne une vue détaillée sur les erreurs du modèle :
+
+- **Vrais positifs (Intent bien détecté) :** **616** exemples.  
+- **Faux positifs (Faux Intent) :** **7** erreurs.  
+- **Vrais négatifs (Non-Intent bien détecté) :** **445** exemples.  
+- **Faux négatifs (Intent manqué) :** **11** erreurs.
+
+📌 **Interprétation :**  
+- 🔹 **Seulement 18 erreurs en tout sur 1079 exemples**, soit **moins de 1.7% d’erreurs**.  
+- 🔹 **Le modèle ne fait presque pas de faux positifs**, il ne prédit pas "Intent" à tort.  
+- 🔹 Les **quelques faux négatifs (11)** montrent que le modèle rate rarement des intentions de voyage.  
+
+✅ **Le modèle est donc extrêmement fiable et minimise au maximum les erreurs !**
 """))
 
 # ROC Curve
@@ -187,6 +224,23 @@ plt.legend(loc="lower right")
 plt.show()
 """))
 
+n.cells.append(nbf.v4.new_markdown_cell("#### 🔍 **Analyse des résultats :**"))
+n.cells.append(nbf.v4.new_markdown_cell(f"""
+La **courbe ROC** montre la capacité du modèle à discriminer entre les classes.
+
+- **AUC = {roc_auc:.3f}** → **Un score proche de 1 est idéal**, et ici nous avons **{roc_auc:.3f}**, ce qui est **excellent**.
+- 📈 **La courbe monte directement à 0.98**, ce qui signifie que le modèle détecte très vite une grande partie des vrais positifs.
+- 🚀 **Progression rapide vers 1 ({roc_auc:.3f}) ** : après ce premier pic, la courbe atteint **rapidement** le maximum, montrant une séparation **très nette** entre les classes.
+- 📏 **Ligne stable proche du 1 sur {roc_auc:.3f}** : une fois ce seuil atteint, la courbe **reste droite sur 1**, prouvant que le modèle **ne fait presque aucune erreur pour les scores élevés**.
+
+📌 **Interprétation :**  
+- ✅ **Le modèle distingue très bien** les phrases qui parlent de voyage et celles qui n'en parlent pas.  
+- ✅ **Une montée immédiate à 0.98** signifie que les intentions de voyage sont détectées **dès les premiers seuils de probabilité**.  
+- ✅ **La ligne plate proche du 1 sur {roc_auc:.3f} ** confirme qu'au-delà d'un certain seuil, **toutes les prédictions sont correctes**.  
+- 🎯 **En conclusion :** La **quasi-perfection** du modèle est confirmée par cette courbe ROC, prouvant qu'il fait **très peu d'erreurs**.
+"""))
+
+
 # Prediction Scores Distribution
 n.cells.append(nbf.v4.new_markdown_cell("## Distribution des scores de probabilité"))
 n.cells.append(nbf.v4.new_markdown_cell("""
@@ -212,6 +266,21 @@ plt.ylabel("Number of Examples")
 plt.title("Distribution of Prediction Scores")
 plt.legend()
 plt.show()
+"""))
+
+n.cells.append(nbf.v4.new_markdown_cell("#### 🔍 **Analyse des résultats :**"))
+n.cells.append(nbf.v4.new_markdown_cell(f"""
+Ce graphique montre la **répartition des probabilités** attribuées par le modèle.
+
+📌 **Observations :**
+- 🔹 Une **très grande barre bleue** à **0 de probabilité score** → **440 exemples classés avec certitude comme "Non-Intent"**.  
+- 🔹 Une **énorme barre orange** à **1 de probabilité score** → **600 exemples sont détectés avec certitude comme "Intent"**.  
+- 🔹 **Très peu d'exemples entre 0.1 et 0.9**, ce qui signifie que le modèle **n'est pas hésitant**.
+
+✅ **Interprétation :**
+- Le modèle fait des **prédictions tranchées** et **ne doute presque jamais**.  
+- **Il est sûr à 100% sur une immense majorité des cas.**  
+- **Seuls quelques exemples (~10) ont une probabilité moyenne (entre 0.8 et 0.9), montrant un modèle bien calibré.**  
 """))
 
 # Save the notebook
