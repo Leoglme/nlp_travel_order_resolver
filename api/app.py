@@ -215,6 +215,15 @@ def camembert_ner_evaluation_html():
     return {"error": "File not found"}
 
 
+# 7. Route to serve the departure and destination extraction evaluation report (HTML)
+@app.get("/api/camembert_ner_evaluation_v2/index.html")
+def camembert_ner_evaluation_html():
+    file_path = "evaluations/camembert_ner_evaluation_v2/index.html"
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="text/html")
+    return {"error": "File not found"}
+
+
 # 8. Route to serve the README.md file as plain text
 @app.get("/api/project_introduction_markdown")
 def project_introduction_markdown():

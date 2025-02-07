@@ -58,6 +58,7 @@ const menuItems: MenuItems = {
     { name: 'LanguageIdentification', url: '/documentation/notebooks/language_identification_evaluation' },
     { name: 'TravelIntentClassifier', url: '/documentation/notebooks/travel-intent-classifier' },
     { name: 'CamembertNERModel', url: '/documentation/notebooks/camembert_ner_evaluation' },
+    { name: 'CamembertNERModel V2', url: '/documentation/notebooks/camembert_ner_evaluation_v2' },
     { name: 'SNCF Dijkstra', url: '/documentation/notebooks/sncf-route-finder' },
   ],
 }

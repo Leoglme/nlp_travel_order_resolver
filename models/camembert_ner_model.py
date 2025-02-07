@@ -32,6 +32,8 @@ class CamembertNERModel:
         # Initializing the intent classification model
         self.intent_classifier = TravelIntentClassifierModel()
 
+        self.label_map = {0: "O", 1: "B-DEP", 2: "B-ARR", 3: "I-DEP", 4: "I-ARR"}
+
     @staticmethod
     def load_data(csv_file):
         dataset = load_dataset('csv', data_files=csv_file)
