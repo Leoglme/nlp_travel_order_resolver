@@ -5,9 +5,7 @@
       <h2 class="text-lg font-semibold">{{ routeResponse.departure }} → {{ routeResponse.destination }}</h2>
       <p class="text-gray-500">
         Durée totale :
-        <span
-            class="font-semibold text-gray-600"
-        >
+        <span class="font-semibold text-gray-600">
           {{ minutesToHoursStr(routeResponse.total_travel_time) }}
         </span>
       </p>
@@ -15,30 +13,43 @@
 
     <!-- Itinerary Stops -->
     <div class="p-6">
-      <div class="relative pl-1.5">
+      <div class="relative">
         <!-- Vertical Line for the Timeline -->
-        <div class="absolute top-0 bottom-0 left-[11px] w-px bg-gray-300"></div>
+        <div class="absolute top-0 bottom-0 left-[6px] w-px bg-gray-300"></div>
 
-        <!-- Each Stop Point-->
+        <!-- Each Stop Point -->
         <div
             v-for="(point, index) in routeResponse.route"
             :key="point.id"
-            class="relative flex cursor-pointer"
-            :class="[index === 0 ? 'mt-0' : 'mt-8', index === routeResponse.route.length - 1 ? 'items-end' : 'items-start']"
+            class="relative flex"
+            :class="[index === 0 ? 'mt-0' : 'mt-6']"
         >
-          <div class="flex flex-col items-center mr-4">
+          <!-- Left Timeline Indicators -->
+          <div class="flex flex-col mr-4">
             <!-- Timeline Point Indicator -->
-            <div class="w-3 h-3 rounded-full bg-secondary-600" />
+            <div class="w-3 h-3 rounded-full bg-secondary-600"></div>
           </div>
 
           <!-- Stop Details -->
-          <div class="grid gap-2">
-            <p class="font-medium leading-3">{{ point.name }}</p>
-            <p
-                v-if="index !== routeResponse.route.length - 1"
-                class="text-xs font-medium text-gray-600">
-              {{formattedTravelTime(routeResponse.route[index + 1].travel_time)}}
+          <div class="grid gap-2 flex-1">
+            <p class="font-medium leading-3 capitalize">
+              {{ point.name }}
             </p>
+
+            <p class="font-medium leading-3 capitalize text-gray-600 text-xs">
+              {{ point.id }}
+            </p>
+
+            <!-- Travel Time Between Stops -->
+            <div
+                v-if="index !== routeResponse.route.length - 1"
+                class="flex items-center mt-2"
+            >
+              <div class="w-px bg-gray-300 h-6"></div>
+              <p class="text-xs font-semibold ml-4">
+                {{ formattedTravelTime(routeResponse.route[index + 1].travel_time) }}
+              </p>
+            </div>
           </div>
         </div>
       </div>

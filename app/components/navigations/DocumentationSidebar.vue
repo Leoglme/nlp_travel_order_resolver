@@ -45,16 +45,22 @@ const menuItems: MenuItems = {
   'Presentation': [
     { name: 'Introduction', url: '/documentation' },
   ],
+  'Guide Utilisateur': [
+    { name: 'Guide d\'utilisation', url: '/documentation/user-guide/how-to-use' },
+  ],
+  'Documentation': [
+    { name: 'Schema Architecture', url: '/documentation/architecture-schema' },
+    { name: 'Analyse de décision', url: '/documentation/decision-analysis' },
+    { name: 'Exemple de traitement', url: '/documentation/example-processing' },
+    { name: 'Entrainement des modèles', url: '/documentation/model-training' },
+  ],
   'Notebooks': [
     { name: 'LanguageIdentification', url: '/documentation/notebooks/language_identification_evaluation' },
     { name: 'TravelIntentClassifier', url: '/documentation/notebooks/travel-intent-classifier' },
     { name: 'CamembertNERModel', url: '/documentation/notebooks/camembert_ner_evaluation' },
+    { name: 'CamembertNERModel V2', url: '/documentation/notebooks/camembert_ner_evaluation_v2' },
+    { name: 'SNCF Dijkstra', url: '/documentation/notebooks/sncf-route-finder' },
   ],
-  'Documentation': [
-    { name: 'Schema Architecture', url: '/documentation/architecture-schema' },
-    { name: 'Exemple de traitement', url: '/documentation/example-processing' },
-    { name: 'Entrainement des modèles', url: '/documentation/model-training' },
-  ]
 }
 
 const activeMenuItem: Ref<MenuItem> = ref(Object.values(menuItems).flat().find((item) => item.url === route.path) || menuItems['Presentation'][0])

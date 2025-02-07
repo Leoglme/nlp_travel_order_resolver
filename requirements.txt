@@ -27,3 +27,5 @@ aiohttp
 jupyter
 matplotlib
 scikit-learn
+ipython
+seaborn

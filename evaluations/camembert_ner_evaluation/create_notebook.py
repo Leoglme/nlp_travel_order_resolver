@@ -28,7 +28,7 @@ notebook_dir = "evaluations/camembert_ner_evaluation"
 notebook_path = os.path.join(notebook_dir, "camembert_ner_evaluation.ipynb")
 executed_notebook_path = os.path.join(notebook_dir, "executed_notebook.ipynb")
 html_output_path = os.path.join(notebook_dir, "index.html")
-test_dataset_path = os.path.join(project_root, "datasets/camembert_ner_dataset.csv")
+test_dataset_path = os.path.join(project_root, "datasets/test_camembert_ner_dataset.csv")
 model_path = "model_output/camembert_ner"
 
 # Define label mapping
