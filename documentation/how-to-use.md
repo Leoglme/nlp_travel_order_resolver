@@ -1,5 +1,5 @@
 <div align="center" style="margin-top: 24px">
-  <img src="https://dibodev-files.s3.eu-west-3.amazonaws.com/epitrip-logo.svg" alt="Logo" width="140" />
+  <img src="../documentation-assets/epitrip-logo.svg" alt="Logo" width="140" />
 </div>
 
 # Comment fonctionne l'application ? 🚆
