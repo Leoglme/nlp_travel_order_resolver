@@ -23,7 +23,7 @@ Exemples de phrases valides :
 - *"Je pars de Rennes pour aller à Biarritz."*  
 - *"Trouve-moi un train de Bordeaux à Paris."*  
 
-![Capture de la page d'accueil](https://dibodev-files.s3.eu-west-3.amazonaws.com/home-work.gif)
+![Capture de la page d'accueil](../documentation-assets/home-work.gif)
 
 ---
 
@@ -51,7 +51,7 @@ Sur la page `/map?q=je+pars+de+Rennes+pour+aller+à+Biarritz`, vous verrez :
 
 - **À droite :** Une carte interactive 🗺️ affichant le trajet en temps réel avec un marqueur pour chaque arrêt. Vous pouvez zoomer, déplacer la carte et cliquer sur un arrêt pour voir son nom et le temps depuis la gare précédente.
 
-![Capture de la page trajet](https://dibodev-files.s3.eu-west-3.amazonaws.com/map.png)
+![Capture de la page trajet](../documentation-assets/map.png)
 
 ---
 
